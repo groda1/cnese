@@ -21,7 +21,6 @@ fn main() {
 
     let path = &args[1];
 
-
     let rom = util::file::derp(path);
 
 
@@ -30,12 +29,10 @@ fn main() {
     let mut cpu = Cpu::new();
     let mut bus = Databus::new();
 
+    let deassembled_instructions = instruction::deassemble(rom.as_slice());
 
 
-    let derp = instruction::deassemble(rom.as_slice());
-
-
-    for a in derp {
+    for a in deassembled_instructions {
         println!("håå {}", a.format());
     }
 
@@ -46,8 +43,4 @@ fn main() {
         cpu.tick(&mut bus);
         std::thread::sleep(std::time::Duration::from_millis(500));
     }
-
-
-
-
 }
