@@ -1,13 +1,13 @@
 #[macro_use]
 extern crate lazy_static;
 
+#[macro_use]
+extern crate enum_map;
+
 mod cpu;
-//use cpu::cpu_6502::State;
-
-use cpu::cpu_6502::Cpu;
-use crate::cpu::databus::Databus;
-
-//use cpu::addressing;
+use cpu::cpu::Cpu;
+use cpu::databus::Databus;
+use cpu::instruction;
 
 mod util;
 
@@ -30,17 +30,23 @@ fn main() {
     let mut cpu = Cpu::new();
     let mut bus = Databus::new();
 
-    bus.load_rom(rom);
 
 
-    loop {
-        cpu.tick(&mut bus);
-        std::thread::sleep(std::time::Duration::from_millis(1000));
+    let derp = instruction::deassemble(rom.as_slice());
+
+
+    for a in derp {
+        println!("håå {}", a.format());
     }
 
 
+    bus.load_rom(rom);
 
-   // println!("LOL {}", x(&mut foo2));
+    loop {
+        cpu.tick(&mut bus);
+        std::thread::sleep(std::time::Duration::from_millis(500));
+    }
+
 
 
 

@@ -15,6 +15,13 @@ impl Databus {
         self.data[address as usize]
     }
 
+    pub fn read_slize(&self, address: u16, len: usize) -> &[u8] {
+        let index = address as usize;
+
+        &(self.data)[index..index + len]
+
+    }
+
     pub fn write(&mut self, address: u16, data: u8) {
         self.data[address as usize] = data;
     }

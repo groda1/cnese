@@ -1,6 +1,6 @@
-pub mod cpu_6502;
+pub mod cpu;
 pub mod databus;
+pub mod instruction;
 
 mod addressing;
 mod state;
-mod instruction;
