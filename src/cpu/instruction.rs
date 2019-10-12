@@ -46,6 +46,8 @@ const JMP: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     state.set_pc(operand);
 };
 
+
+
 lazy_static! {
     static ref OPERATION_FN_MAP: EnumMap<Operation, OperationFn> = {
         let map = enum_map! {

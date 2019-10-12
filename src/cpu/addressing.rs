@@ -6,30 +6,23 @@ use enum_map::EnumMap;
 pub type AddressingModeFn = fn(state: &State, bus: &Databus, operand: u16) -> u16;
 
 
-pub const UNKNOWN: AddressingModeFn = |_state: &State, _bus: &Databus, _operand: u16| -> u16 { 0 };
-pub const IMPLIED: AddressingModeFn = |_state: &State, _bus: &Databus, _operand: u16| -> u16 { 0 };
-pub const ABSOLUTE: AddressingModeFn = |_state: &State, _bus: &Databus, operand: u16| -> u16 { operand };
+pub const DO_NOTHING: AddressingModeFn = |_state: &State, _bus: &Databus, _operand: u16| -> u16 { 0 };
 pub const IMMEDIATE: AddressingModeFn = |_state: &State, _bus: &Databus, operand: u16| -> u16 { operand };
+pub const RELATIVE: AddressingModeFn = |_state: &State, _bus: &Databus, operand: u16| -> u16 { operand };
 
-//
-//pub const RELATIVE: AddressingMode = || -> u16 {
-//    32
-//};
-//
+pub const ABSOLUTE: AddressingModeFn = |_state: &State, _bus: &Databus, operand: u16| -> u16 { operand };
+pub const ABSOLUTE_INDEXED_X: AddressingModeFn = |state: &State, _bus: &Databus, operand: u16| -> u16 {
+    // TODO check for page boundary
 
-//pub const ACCUMULATOR: AddressingMode = |state : &mut State, bus : &mut Databus| -> u16 {
-//    0
-//};
+    operand + state.x as u16
+};
 
-//
-//pub const ABSOLUTE_INDEXED_X: AddressingMode = || -> u16 {
-//    32
-//};
-//
-//pub const ABSOLUTE_INDEXED_Y: AddressingMode = || -> u16 {
-//    32
-//};
-//
+pub const ABSOLUTE_INDEXED_Y: AddressingModeFn = |state: &State, _bus: &Databus, operand: u16| -> u16 {
+    // TODO check for page boundary
+
+    operand + state.y as u16
+};
+
 //pub const ZEROPAGE: AddressingMode = || -> u16 {
 //    32
 //};
@@ -59,10 +52,14 @@ pub const IMMEDIATE: AddressingModeFn = |_state: &State, _bus: &Databus, operand
 
 #[derive(Clone, Copy, Enum)]
 pub enum AddressingMode {
+    UNKNOWN,
     IMPLIED,
     IMMEDIATE,
     ABSOLUTE,
-    UNKNOWN,
+    ABSOLUTE_INDEXED_X,
+    ABSOLUTE_INDEXED_Y,
+    RELATIVE,
+    ACCUMULATOR,
 }
 
 
@@ -81,6 +78,10 @@ impl AddressingMode {
             AddressingMode::IMPLIED => format!(""),
             AddressingMode::IMMEDIATE => format!("#${:02x}", operand),
             AddressingMode::ABSOLUTE => format!("${:04x}", operand),
+            AddressingMode::ABSOLUTE_INDEXED_X => format!("${:04x},X", operand),
+            AddressingMode::ABSOLUTE_INDEXED_Y => format!("${:04x},Y", operand),
+            AddressingMode::RELATIVE => format!{"${:02x}", operand},
+            AddressingMode::ACCUMULATOR => format!{"A"},
             _ => format!("UNKNOWN")
         }
     }
@@ -89,10 +90,14 @@ impl AddressingMode {
 lazy_static! {
     static ref ADDRESS_MODE_FN_MAP: EnumMap<AddressingMode, AddressingModeFn> = {
         let map = enum_map! {
-            AddressingMode::IMPLIED => IMPLIED,
+            AddressingMode::IMPLIED => DO_NOTHING,
             AddressingMode::IMMEDIATE => IMMEDIATE,
             AddressingMode::ABSOLUTE => ABSOLUTE,
-            AddressingMode::UNKNOWN => UNKNOWN
+            AddressingMode::ABSOLUTE_INDEXED_X => ABSOLUTE_INDEXED_X,
+            AddressingMode::ABSOLUTE_INDEXED_Y => ABSOLUTE_INDEXED_Y,
+            AddressingMode::RELATIVE => RELATIVE,
+            AddressingMode::ACCUMULATOR => DO_NOTHING,
+            AddressingMode::UNKNOWN => DO_NOTHING,
         };
         map
     };
