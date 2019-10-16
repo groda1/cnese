@@ -1,3 +1,10 @@
+pub const SR_MASK_NEGATIVE: u8 = 1 << 7;
+pub const SR_MASK_OVERFLOW: u8 = 1 << 6;
+pub const SR_MASK_BREAK: u8 = 1 << 4;
+pub const SR_MASK_DECIMAL: u8 = 1 << 3;
+pub const SR_MASK_INTERRUPT: u8 = 1 << 2;
+pub const SR_MASK_ZERO: u8 = 1 << 1;
+pub const SR_MASK_CARRY: u8 = 1 << 0;
 
 pub struct State {
     pub acc: u8,
@@ -38,6 +45,15 @@ impl State {
     pub fn get_pc(&self) -> u16 {
         self.program_counter
     }
+
+    fn set_status_field(&mut self, field: u8, value: bool) {
+        if value {
+            self.status |= field;
+        } else {
+            self.status &= !field;
+        }
+    }
+
 }
 
 
@@ -55,17 +71,18 @@ mod tests {
         state.offset_pc(-50);
         assert_eq!(50, state.program_counter);
     }
+
+    #[test]
+    fn test_set_status_field() {
+        let mut state = State::new();
+
+        let initial = super::SR_MASK_OVERFLOW | super::SR_MASK_CARRY | super::SR_MASK_ZERO;
+
+        state.set_status_field(initial, true);
+        assert_eq!(initial, state.status);
+        state.set_status_field(super::SR_MASK_BREAK, true);
+        assert_eq!(initial | super::SR_MASK_BREAK, state.status);
+        state.set_status_field(super::SR_MASK_BREAK, false);
+        assert_eq!(initial, state.status);
+    }
 }
-
-/*
-SR Flags (bit 7 to bit 0):
-
-N	....	Negative
-V	....	Overflow
--	....	ignored
-B	....	Break
-D	....	Decimal (use BCD for arithmetics)
-I	....	Interrupt (IRQ disable)
-Z	....	Zero
-C	....	Carry
-*/
