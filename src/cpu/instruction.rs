@@ -35,11 +35,11 @@ const NOT_IMPLEMENTED: OperationFn = |_state: &mut State, _bus: &mut Databus, _o
 };
 
 const INX: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
-    state.x += 1;
+    state.x = state.x.wrapping_add(1);
 };
 
 const INY: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
-    state.y += 1;
+    state.y = state.y.wrapping_add(1);
 };
 
 const JMP: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
@@ -62,12 +62,12 @@ lazy_static! {
 
 lazy_static! {
     static ref OPCODE_SET: Vec <Opcode> = {
-        let unknown = Opcode::new(Operation::UNKNOWN, AddressingMode::UNKNOWN, 1);
+        let unknown = Opcode::new(Operation::UNKNOWN, AddressingMode::Unknown, 1);
         let mut opcodes = vec ! [unknown; 256];
 
-        opcodes[0xc8] = Opcode::new(Operation::INY, AddressingMode::IMPLIED, 1);
-        opcodes[0xe8] = Opcode::new(Operation::INX, AddressingMode::IMPLIED, 1);
-        opcodes[0x4c] = Opcode::new(Operation::JMP, AddressingMode::ABSOLUTE, 3);
+        opcodes[0xc8] = Opcode::new(Operation::INY, AddressingMode::Implied, 1);
+        opcodes[0xe8] = Opcode::new(Operation::INX, AddressingMode::Implied, 1);
+        opcodes[0x4c] = Opcode::new(Operation::JMP, AddressingMode::Absolute, 3);
 
 
         opcodes

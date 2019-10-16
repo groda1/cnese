@@ -1,3 +1,4 @@
+
 pub struct State {
     pub acc: u8,
     pub x: u8,
@@ -34,7 +35,6 @@ impl State {
     pub fn set_pc(&mut self, pc: u16) {
         self.program_counter = pc;
     }
-
     pub fn get_pc(&self) -> u16 {
         self.program_counter
     }
@@ -56,3 +56,16 @@ mod tests {
         assert_eq!(50, state.program_counter);
     }
 }
+
+/*
+SR Flags (bit 7 to bit 0):
+
+N	....	Negative
+V	....	Overflow
+-	....	ignored
+B	....	Break
+D	....	Decimal (use BCD for arithmetics)
+I	....	Interrupt (IRQ disable)
+Z	....	Zero
+C	....	Carry
+*/

@@ -19,6 +19,19 @@ fn main() {
 
     println!("args {:?}", args);
 
+
+
+    use std::num::Wrapping;
+
+
+    let c = 0xc0u8;
+    let d = 0x60u8;
+    let (kek, foo) = c.overflowing_add(d);
+
+
+    println!("kek {:02x} {}", kek, foo);
+
+
     let path = &args[1];
 
     let rom = util::file::derp(path);
