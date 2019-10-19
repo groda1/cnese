@@ -15,6 +15,7 @@ enum Operation {
     INX,
     INY,
     JMP,
+    LDA,
     NOP,
     SEC,
     SED,
@@ -33,6 +34,7 @@ impl Operation {
             Operation::INX => "INX",
             Operation::INY => "INY",
             Operation::JMP => "JMP",
+            Operation::LDA => "LDA",
             Operation::NOP => "NOP",
             Operation::SEC => "SEC",
             Operation::SED => "SED",
@@ -52,6 +54,10 @@ const NOT_IMPLEMENTED: OperationFn = |_state: &mut State, _bus: &mut Databus, _o
     println!("Not Implemented!");
 };
 
+//V = 0 when (0xFF00 + U1) - U2 >= 0xFE80 and (0xFF00 + U1) - U2 <= 0xFF7F
+//V = 1 when (0xFF00 + U1) - U2 <  0xFE80 or  (0xFF00 + U1) - U2 >  0xFF7F
+
+
 const CLC: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
     state.set_status(state::SR_MASK_CARRY, false);
 };
@@ -70,14 +76,27 @@ const CLV: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| 
 
 const INX: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
     state.x = state.x.wrapping_add(1);
+
+    state.set_status(state::SR_MASK_NEGATIVE, state.x >= 128);
+    state.set_status(state::SR_MASK_ZERO, state.x == 0);
 };
 
 const INY: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
     state.y = state.y.wrapping_add(1);
+
+    state.set_status(state::SR_MASK_NEGATIVE, state.y >= 128);
+    state.set_status(state::SR_MASK_ZERO, state.y == 0);
 };
 
 const JMP: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     state.set_pc(operand);
+};
+
+const LDA: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+    state.acc = operand as u8;
+
+    state.set_status(state::SR_MASK_NEGATIVE, state.acc >= 128);
+    state.set_status(state::SR_MASK_ZERO, state.acc == 0);
 };
 
 const NOP: OperationFn = |_state: &mut State, _bus: &mut Databus, _operand: u16| {};
@@ -103,6 +122,7 @@ lazy_static! {
             Operation::CLV => CLV,
             Operation::INX => INX,
             Operation::INY => INY,
+            Operation::LDA => LDA,
             Operation::JMP => JMP,
             Operation::NOP => NOP,
             Operation::SEC => SEC,
@@ -116,22 +136,34 @@ lazy_static! {
 
 lazy_static! {
     static ref OPCODE_SET: Vec <Opcode> = {
-        let unknown = Opcode::new(Operation::UNKNOWN, AddressingMode::Unknown, 1);
+        let unknown = Opcode::new(Operation::UNKNOWN, AddressingMode::Unknown, 1, 0, false);
         let mut opcodes = vec ! [unknown; 256];
 
-        opcodes[0x18] = Opcode::new(Operation::CLC, AddressingMode::Implied, 1);
-        opcodes[0xd8] = Opcode::new(Operation::CLD, AddressingMode::Implied, 1);
-        opcodes[0x58] = Opcode::new(Operation::CLI, AddressingMode::Implied, 1);
-        opcodes[0xb8] = Opcode::new(Operation::CLV, AddressingMode::Implied, 1);
+        opcodes[0x18] = Opcode::new(Operation::CLC, AddressingMode::Implied, 1, 2, false);
+        opcodes[0xd8] = Opcode::new(Operation::CLD, AddressingMode::Implied, 1, 2, false);
+        opcodes[0x58] = Opcode::new(Operation::CLI, AddressingMode::Implied, 1, 2, false);
+        opcodes[0xb8] = Opcode::new(Operation::CLV, AddressingMode::Implied, 1, 2, false);
 
-        opcodes[0xc8] = Opcode::new(Operation::INY, AddressingMode::Implied, 1);
-        opcodes[0xe8] = Opcode::new(Operation::INX, AddressingMode::Implied, 1);
-        opcodes[0xea] = Opcode::new(Operation::NOP, AddressingMode::Implied, 1);
-        opcodes[0x4c] = Opcode::new(Operation::JMP, AddressingMode::Absolute, 3);
+        opcodes[0xc8] = Opcode::new(Operation::INY, AddressingMode::Implied, 1, 2, false);
+        opcodes[0xe8] = Opcode::new(Operation::INX, AddressingMode::Implied, 1, 2, false);
 
-        opcodes[0x38] = Opcode::new(Operation::SEC, AddressingMode::Implied, 1);
-        opcodes[0xf8] = Opcode::new(Operation::SED, AddressingMode::Implied, 1);
-        opcodes[0x78] = Opcode::new(Operation::SEI, AddressingMode::Implied, 1);
+        opcodes[0xa9] = Opcode::new(Operation::LDA, AddressingMode::Immediate, 2, 2, false);
+        opcodes[0xa5] = Opcode::new(Operation::LDA, AddressingMode::Zeropage, 2, 3, false);
+        opcodes[0xb5] = Opcode::new(Operation::LDA, AddressingMode::ZeropageIndexedX, 2, 4, false);
+        opcodes[0xad] = Opcode::new(Operation::LDA, AddressingMode::Absolute, 3, 4, false);
+        opcodes[0xbd] = Opcode::new(Operation::LDA, AddressingMode::AbsoluteIndexedX, 3, 4, true);
+        opcodes[0xb9] = Opcode::new(Operation::LDA, AddressingMode::AbsoluteIndexedY, 3, 4, true);
+        opcodes[0xa1] = Opcode::new(Operation::LDA, AddressingMode::IndexedIndirectX, 2, 6, false);
+        opcodes[0xb1] = Opcode::new(Operation::LDA, AddressingMode::IndirectIndexedY, 2, 5, true);
+
+        opcodes[0xea] = Opcode::new(Operation::NOP, AddressingMode::Implied, 1, 2, false);
+
+        opcodes[0x4c] = Opcode::new(Operation::JMP, AddressingMode::Absolute, 3, 3, false);
+        opcodes[0x6c] = Opcode::new(Operation::JMP, AddressingMode::Indirect, 3, 5, false);
+
+        opcodes[0x38] = Opcode::new(Operation::SEC, AddressingMode::Implied, 1, 2, false);
+        opcodes[0xf8] = Opcode::new(Operation::SED, AddressingMode::Implied, 1, 2, false);
+        opcodes[0x78] = Opcode::new(Operation::SEI, AddressingMode::Implied, 1, 2, false);
 
         opcodes
     };
@@ -141,12 +173,18 @@ lazy_static! {
 struct Opcode {
     operation : Operation,
     mode : AddressingMode,
-    size : u8
+    size : u8,
+    cycles : u8,
+    page_boundary_penalty: bool
 }
 
 impl Opcode {
-    fn new(operation: Operation, mode: AddressingMode, size: u8) -> Opcode {
-        Opcode { operation, mode, size }
+    fn new(operation: Operation,
+           mode: AddressingMode,
+           size: u8,
+           cycles: u8,
+           page_boundary_penalty: bool) -> Opcode {
+        Opcode { operation, mode, size, cycles, page_boundary_penalty }
     }
 }
 
