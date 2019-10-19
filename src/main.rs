@@ -18,6 +18,13 @@ fn main() {
 
     let path = &args[1];
 
+    let a:i8 = 120;
+    let b:i8 = 40;
+
+    let (result, v) = a.overflowing_add(b);
+
+    println!("{} {}", result, v);
+
     let rom = util::file::read_file(path);
     let mut cpu = Cpu::new();
     let mut bus = Databus::new();

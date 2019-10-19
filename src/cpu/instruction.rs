@@ -8,6 +8,7 @@ use enum_map::EnumMap;
 
 #[derive(Clone, Copy, Enum)]
 enum Operation {
+    ADC,
     CLC,
     CLD,
     CLI,
@@ -17,6 +18,7 @@ enum Operation {
     JMP,
     LDA,
     NOP,
+    SBC,
     SEC,
     SED,
     SEI,
@@ -27,6 +29,7 @@ enum Operation {
 impl Operation {
     fn as_str(&self) -> &'static str {
         match *self {
+            Operation::ADC => "ADC",
             Operation::CLC => "CLC",
             Operation::CLD => "CLD",
             Operation::CLI => "CLI",
@@ -36,6 +39,7 @@ impl Operation {
             Operation::JMP => "JMP",
             Operation::LDA => "LDA",
             Operation::NOP => "NOP",
+            Operation::SBC => "SBC",
             Operation::SEC => "SEC",
             Operation::SED => "SED",
             Operation::SEI => "SEI",
@@ -54,9 +58,31 @@ const NOT_IMPLEMENTED: OperationFn = |_state: &mut State, _bus: &mut Databus, _o
     println!("Not Implemented!");
 };
 
-//V = 0 when (0xFF00 + U1) - U2 >= 0xFE80 and (0xFF00 + U1) - U2 <= 0xFF7F
-//V = 1 when (0xFF00 + U1) - U2 <  0xFE80 or  (0xFF00 + U1) - U2 >  0xFF7F
+const ADC: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+    let sum = (state.acc as u16).wrapping_add(operand).wrapping_add(state.get_status(state::SR_MASK_CARRY) as u16);
+    let carry = sum > 0xff;
+    let overflow = (!(state.acc as u16 ^ operand) & (state.acc as u16 ^ sum) & 0x80) > 0;
 
+    state.acc = sum as u8;
+
+    state.set_status(state::SR_MASK_NEGATIVE, state.acc >= 128);
+    state.set_status(state::SR_MASK_ZERO, state.acc == 0);
+    state.set_status(state::SR_MASK_CARRY, carry);
+    state.set_status(state::SR_MASK_OVERFLOW, overflow);
+};
+
+const SBC: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+    let sum = (state.acc as u16).wrapping_sub(operand).wrapping_sub(state.get_status(state::SR_MASK_CARRY) as u16);
+    let carry = sum > 0xff;
+    let overflow = (!(state.acc as u16 ^ operand) & (state.acc as u16 ^ sum) & 0x80) > 0;
+
+    state.acc = sum as u8;
+
+    state.set_status(state::SR_MASK_NEGATIVE, state.acc >= 128);
+    state.set_status(state::SR_MASK_ZERO, state.acc == 0);
+    state.set_status(state::SR_MASK_CARRY, carry);
+    state.set_status(state::SR_MASK_OVERFLOW, overflow);
+};
 
 const CLC: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
     state.set_status(state::SR_MASK_CARRY, false);
@@ -116,6 +142,7 @@ const SEI: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| 
 lazy_static! {
     static ref OPERATION_FN_MAP: EnumMap<Operation, OperationFn> = {
         let map = enum_map! {
+            Operation::ADC => ADC,
             Operation::CLC => CLC,
             Operation::CLD => CLD,
             Operation::CLI => CLI,
@@ -125,6 +152,7 @@ lazy_static! {
             Operation::LDA => LDA,
             Operation::JMP => JMP,
             Operation::NOP => NOP,
+            Operation::SBC => SBC,
             Operation::SEC => SEC,
             Operation::SED => SED,
             Operation::SEI => SEI,
@@ -138,6 +166,15 @@ lazy_static! {
     static ref OPCODE_SET: Vec <Opcode> = {
         let unknown = Opcode::new(Operation::UNKNOWN, AddressingMode::Unknown, 1, 0, false);
         let mut opcodes = vec ! [unknown; 256];
+
+        opcodes[0x69] = Opcode::new(Operation::ADC, AddressingMode::Immediate, 2, 2, false);
+        opcodes[0x65] = Opcode::new(Operation::ADC, AddressingMode::Zeropage, 2, 3, false);
+        opcodes[0x75] = Opcode::new(Operation::ADC, AddressingMode::ZeropageIndexedX, 2, 4, false);
+        opcodes[0x6d] = Opcode::new(Operation::ADC, AddressingMode::Absolute, 3, 4, false);
+        opcodes[0x7d] = Opcode::new(Operation::ADC, AddressingMode::AbsoluteIndexedX, 3, 4, true);
+        opcodes[0x79] = Opcode::new(Operation::ADC, AddressingMode::AbsoluteIndexedY, 3, 4, true);
+        opcodes[0x61] = Opcode::new(Operation::ADC, AddressingMode::IndexedIndirectX, 2, 6, false);
+        opcodes[0x71] = Opcode::new(Operation::ADC, AddressingMode::IndirectIndexedY, 2, 5, true);
 
         opcodes[0x18] = Opcode::new(Operation::CLC, AddressingMode::Implied, 1, 2, false);
         opcodes[0xd8] = Opcode::new(Operation::CLD, AddressingMode::Implied, 1, 2, false);
@@ -161,6 +198,15 @@ lazy_static! {
         opcodes[0x4c] = Opcode::new(Operation::JMP, AddressingMode::Absolute, 3, 3, false);
         opcodes[0x6c] = Opcode::new(Operation::JMP, AddressingMode::Indirect, 3, 5, false);
 
+        opcodes[0xe9] = Opcode::new(Operation::SBC, AddressingMode::Immediate, 2, 2, false);
+        opcodes[0xe5] = Opcode::new(Operation::SBC, AddressingMode::Zeropage, 2, 3, false);
+        opcodes[0xf5] = Opcode::new(Operation::SBC, AddressingMode::ZeropageIndexedX, 2, 4, false);
+        opcodes[0xed] = Opcode::new(Operation::SBC, AddressingMode::Absolute, 3, 4, false);
+        opcodes[0xfd] = Opcode::new(Operation::SBC, AddressingMode::AbsoluteIndexedX, 3, 4, true);
+        opcodes[0xf9] = Opcode::new(Operation::SBC, AddressingMode::AbsoluteIndexedY, 3, 4, true);
+        opcodes[0xe1] = Opcode::new(Operation::SBC, AddressingMode::IndexedIndirectX, 2, 6, false);
+        opcodes[0xf1] = Opcode::new(Operation::SBC, AddressingMode::IndirectIndexedY, 2, 5, true);
+
         opcodes[0x38] = Opcode::new(Operation::SEC, AddressingMode::Implied, 1, 2, false);
         opcodes[0xf8] = Opcode::new(Operation::SED, AddressingMode::Implied, 1, 2, false);
         opcodes[0x78] = Opcode::new(Operation::SEI, AddressingMode::Implied, 1, 2, false);
@@ -171,11 +217,11 @@ lazy_static! {
 
 #[derive(Clone, Copy)]
 struct Opcode {
-    operation : Operation,
-    mode : AddressingMode,
-    size : u8,
-    cycles : u8,
-    page_boundary_penalty: bool
+    operation: Operation,
+    mode: AddressingMode,
+    size: u8,
+    cycles: u8,
+    page_boundary_penalty: bool,
 }
 
 impl Opcode {
@@ -214,7 +260,7 @@ impl Instruction {
 }
 
 pub fn parse_instruction(prg: &[u8]) -> Instruction {
-    let opcode =  OPCODE_SET[prg[0] as usize];
+    let opcode = OPCODE_SET[prg[0] as usize];
 
     let mut operand = 0;
     if opcode.size == 2 {
