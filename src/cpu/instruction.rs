@@ -1,5 +1,6 @@
 use super::databus::Databus;
 use super::state::State;
+use super::state;
 use super::addressing::AddressingMode;
 
 use enum_map::EnumMap;
@@ -7,20 +8,35 @@ use enum_map::EnumMap;
 
 #[derive(Clone, Copy, Enum)]
 enum Operation {
+    CLC,
+    CLD,
+    CLI,
+    CLV,
     INX,
     INY,
     JMP,
     NOP,
+    SEC,
+    SED,
+    SEI,
+
     UNKNOWN,
 }
 
 impl Operation {
     fn as_str(&self) -> &'static str {
         match *self {
+            Operation::CLC => "CLC",
+            Operation::CLD => "CLD",
+            Operation::CLI => "CLI",
+            Operation::CLV => "CLV",
             Operation::INX => "INX",
             Operation::INY => "INY",
             Operation::JMP => "JMP",
             Operation::NOP => "NOP",
+            Operation::SEC => "SEC",
+            Operation::SED => "SED",
+            Operation::SEI => "SEI",
             _ => "##"
         }
     }
@@ -34,6 +50,22 @@ type OperationFn = fn(state: &mut State, bus: &mut Databus, operand: u16);
 
 const NOT_IMPLEMENTED: OperationFn = |_state: &mut State, _bus: &mut Databus, _operand: u16| {
     println!("Not Implemented!");
+};
+
+const CLC: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+    state.set_status(state::SR_MASK_CARRY, false);
+};
+
+const CLD: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+    state.set_status(state::SR_MASK_DECIMAL, false);
+};
+
+const CLI: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+    state.set_status(state::SR_MASK_INTERRUPT, false);
+};
+
+const CLV: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+    state.set_status(state::SR_MASK_OVERFLOW, false);
 };
 
 const INX: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
@@ -50,15 +82,32 @@ const JMP: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
 
 const NOP: OperationFn = |_state: &mut State, _bus: &mut Databus, _operand: u16| {};
 
+const SEC: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+    state.set_status(state::SR_MASK_CARRY, true);
+};
 
+const SED: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+    state.set_status(state::SR_MASK_DECIMAL, true);
+};
+
+const SEI: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+    state.set_status(state::SR_MASK_INTERRUPT, true);
+};
 
 lazy_static! {
     static ref OPERATION_FN_MAP: EnumMap<Operation, OperationFn> = {
         let map = enum_map! {
+            Operation::CLC => CLC,
+            Operation::CLD => CLD,
+            Operation::CLI => CLI,
+            Operation::CLV => CLV,
             Operation::INX => INX,
             Operation::INY => INY,
             Operation::JMP => JMP,
             Operation::NOP => NOP,
+            Operation::SEC => SEC,
+            Operation::SED => SED,
+            Operation::SEI => SEI,
             Operation::UNKNOWN => NOT_IMPLEMENTED
         };
         map
@@ -70,11 +119,19 @@ lazy_static! {
         let unknown = Opcode::new(Operation::UNKNOWN, AddressingMode::Unknown, 1);
         let mut opcodes = vec ! [unknown; 256];
 
+        opcodes[0x18] = Opcode::new(Operation::CLC, AddressingMode::Implied, 1);
+        opcodes[0xd8] = Opcode::new(Operation::CLD, AddressingMode::Implied, 1);
+        opcodes[0x58] = Opcode::new(Operation::CLI, AddressingMode::Implied, 1);
+        opcodes[0xb8] = Opcode::new(Operation::CLV, AddressingMode::Implied, 1);
+
         opcodes[0xc8] = Opcode::new(Operation::INY, AddressingMode::Implied, 1);
         opcodes[0xe8] = Opcode::new(Operation::INX, AddressingMode::Implied, 1);
         opcodes[0xea] = Opcode::new(Operation::NOP, AddressingMode::Implied, 1);
         opcodes[0x4c] = Opcode::new(Operation::JMP, AddressingMode::Absolute, 3);
 
+        opcodes[0x38] = Opcode::new(Operation::SEC, AddressingMode::Implied, 1);
+        opcodes[0xf8] = Opcode::new(Operation::SED, AddressingMode::Implied, 1);
+        opcodes[0x78] = Opcode::new(Operation::SEI, AddressingMode::Implied, 1);
 
         opcodes
     };

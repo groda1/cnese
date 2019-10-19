@@ -56,7 +56,11 @@ impl State {
     }
 
 
-    fn set_status_field(&mut self, field: u8, value: bool) {
+    pub fn get_status(&self, mask: u8) -> bool {
+        self.status & mask > 0
+    }
+
+    pub fn set_status(&mut self, field: u8, value: bool) {
         if value {
             self.status |= field;
         } else {
@@ -88,11 +92,11 @@ mod tests {
 
         let initial = super::SR_MASK_OVERFLOW | super::SR_MASK_CARRY | super::SR_MASK_ZERO;
 
-        state.set_status_field(initial, true);
+        state.set_status(initial, true);
         assert_eq!(initial, state.status);
-        state.set_status_field(super::SR_MASK_BREAK, true);
+        state.set_status(super::SR_MASK_BREAK, true);
         assert_eq!(initial | super::SR_MASK_BREAK, state.status);
-        state.set_status_field(super::SR_MASK_BREAK, false);
+        state.set_status(super::SR_MASK_BREAK, false);
         assert_eq!(initial, state.status);
     }
 }
