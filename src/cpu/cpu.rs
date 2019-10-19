@@ -20,10 +20,10 @@ impl Cpu {
         let instr = instruction::parse_instruction(next_instruction_binary);
 
         self.state.offset_pc(instr.get_size() as i8);
-        println!("executing {}",instr.format());
-
         instr.execute(&mut self.state, bus);
 
     }
+
+    pub fn get_state(&self) -> &State { &self.state }
 }
 

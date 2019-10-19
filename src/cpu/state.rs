@@ -6,6 +6,8 @@ pub const SR_MASK_INTERRUPT: u8 = 1 << 2;
 pub const SR_MASK_ZERO: u8 = 1 << 1;
 pub const SR_MASK_CARRY: u8 = 1 << 0;
 
+const PC_START: u16 = 0x4020;
+
 pub struct State {
     pub acc: u8,
     pub x: u8,
@@ -20,7 +22,7 @@ pub struct State {
 
 impl State {
     pub fn new() -> State {
-        State {
+        let mut state = State {
             acc: 0,
             x: 0,
             y: 0,
@@ -28,7 +30,10 @@ impl State {
             stack_pointer: 0,
             status: 0,
             cycles: 0,
-        }
+        };
+
+        state.program_counter = PC_START;
+        state
     }
 
     pub fn offset_pc(&mut self, offset: i8) {
@@ -45,6 +50,11 @@ impl State {
     pub fn get_pc(&self) -> u16 {
         self.program_counter
     }
+
+    pub fn get_sp(&self) -> u8 {
+        self.stack_pointer
+    }
+
 
     fn set_status_field(&mut self, field: u8, value: bool) {
         if value {

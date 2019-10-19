@@ -83,18 +83,18 @@ impl AddressingMode {
     pub fn format(&self, operand: u16) -> String {
         match *self {
             AddressingMode::Implied => format!(""),
-            AddressingMode::Immediate => format!("#${:02x}", operand),
-            AddressingMode::Absolute => format!("${:04x}", operand),
-            AddressingMode::AbsoluteIndexedX => format!("${:04x},X", operand),
-            AddressingMode::AbsoluteIndexedY => format!("${:04x},Y", operand),
-            AddressingMode::Zeropage => format!("${:02x}", operand),
-            AddressingMode::ZeropageIndexedX => format!("${:02x},X", operand),
-            AddressingMode::Relative => format! {"${:02x}", operand},
+            AddressingMode::Immediate => format!("#${:02X}", operand),
+            AddressingMode::Absolute => format!("${:04X}", operand),
+            AddressingMode::AbsoluteIndexedX => format!("${:04X},X", operand),
+            AddressingMode::AbsoluteIndexedY => format!("${:04X},Y", operand),
+            AddressingMode::Zeropage => format!("${:02X}", operand),
+            AddressingMode::ZeropageIndexedX => format!("${:02X},X", operand),
+            AddressingMode::Relative => format! {"${:02X}", operand},
             AddressingMode::Accumulator => format! {"A"},
-            AddressingMode::Indirect => format! {"(${:04x})", operand},
-            AddressingMode::IndexedIndirectX => format! {"(${:02x},X)", operand},
-            AddressingMode::IndirectIndexedY => format! {"(${:02x}),Y", operand},
-            _ => format!("UNKNOWN")
+            AddressingMode::Indirect => format! {"(${:04X})", operand},
+            AddressingMode::IndexedIndirectX => format! {"(${:02X},X)", operand},
+            AddressingMode::IndirectIndexedY => format! {"(${:02X}),Y", operand},
+            _ => format!("##")
         }
     }
 }

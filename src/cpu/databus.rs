@@ -1,5 +1,7 @@
 const DATABUS_SIZE: usize = std::u16::MAX as usize + 1;
 
+pub const CARTRIDGE_SPACE_OFFSET: usize = 0x4020;
+
 pub struct Databus {
     data: Vec<u8>
 }
@@ -27,10 +29,14 @@ impl Databus {
     }
 
     pub fn load_rom(&mut self, rom_data: Vec<u8>) {
-        let mut i: usize = 0;
+        let mut i = CARTRIDGE_SPACE_OFFSET;
         for byte in rom_data {
             self.data[i] = byte;
             i += 1;
         }
+    }
+
+    pub fn get_cartridge(&self) -> &[u8] {
+        &(self.data)[CARTRIDGE_SPACE_OFFSET..0xFFFF]
     }
 }

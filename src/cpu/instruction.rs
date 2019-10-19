@@ -10,6 +10,7 @@ enum Operation {
     INX,
     INY,
     JMP,
+    NOP,
     UNKNOWN,
 }
 
@@ -19,7 +20,8 @@ impl Operation {
             Operation::INX => "INX",
             Operation::INY => "INY",
             Operation::JMP => "JMP",
-            _ => "Not Defined!"
+            Operation::NOP => "NOP",
+            _ => "##"
         }
     }
 
@@ -46,6 +48,8 @@ const JMP: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     state.set_pc(operand);
 };
 
+const NOP: OperationFn = |_state: &mut State, _bus: &mut Databus, _operand: u16| {};
+
 
 
 lazy_static! {
@@ -54,6 +58,7 @@ lazy_static! {
             Operation::INX => INX,
             Operation::INY => INY,
             Operation::JMP => JMP,
+            Operation::NOP => NOP,
             Operation::UNKNOWN => NOT_IMPLEMENTED
         };
         map
@@ -67,6 +72,7 @@ lazy_static! {
 
         opcodes[0xc8] = Opcode::new(Operation::INY, AddressingMode::Implied, 1);
         opcodes[0xe8] = Opcode::new(Operation::INX, AddressingMode::Implied, 1);
+        opcodes[0xea] = Opcode::new(Operation::NOP, AddressingMode::Implied, 1);
         opcodes[0x4c] = Opcode::new(Operation::JMP, AddressingMode::Absolute, 3);
 
 
