@@ -7,6 +7,7 @@ use sdl2::pixels::Color;
 use super::super::cpu::instruction::Instruction;
 use super::super::cpu::databus;
 use super::super::cpu::state::State;
+use super::super::cpu::state;
 
 use super::util;
 
@@ -23,7 +24,7 @@ static INSTRUCTION_WINDOW_LINE_WRAP_OFFSET: usize = 3;
 static INSTRUCTION_WINDOW_WIDTH: u32 = 300;
 
 static REGISTER_WINDOW_WIDTH: u32 = 300;
-static REGISTER_WINDOW_HEIGHT: u32 = 300;
+static REGISTER_WINDOW_HEIGHT: u32 = 110;
 
 
 pub struct RegisterWindow<'a> {
@@ -47,13 +48,17 @@ impl<'a> RegisterWindow<'a> {
     }
 
     pub fn render(&self, canvas: &mut Canvas<Window>, state: &State) -> Result<(), String> {
+        const LINE_OFFSET: i32 = 5;
+        const STATUS_FLAG_OFFSET: i32 = 30;
+
         util::render_window(canvas,
                             self.x,
                             self.y,
                             REGISTER_WINDOW_WIDTH,
                             REGISTER_WINDOW_HEIGHT,
                             Color::from(FRAME_BORDER_COLOR),
-                            Color::from(FRAME_BACKGROUND_COLOR));
+                            Color::from(FRAME_BACKGROUND_COLOR),
+        );
 
         util::render_text(canvas,
                           self.texture_creator,
@@ -61,29 +66,94 @@ impl<'a> RegisterWindow<'a> {
                           self.x + FRAME_PADDING,
                           self.y + FRAME_PADDING,
                           "A:    X:    Y:",
-                          Color::from(TEXT_COLOR))?;
+                          Color::from(TEXT_COLOR),
+        )?;
         util::render_text(canvas,
                           self.texture_creator,
                           self.font,
                           self.x + FRAME_PADDING,
                           self.y + FRAME_PADDING,
                           format!("  ${:02X}   ${:02X}   ${:02X}", state.acc, state.x, state.y).as_str(),
-                          Color::from(TEXT_COLOR_DARK))?;
+                          Color::from(TEXT_COLOR_DARK),
+        )?;
 
         util::render_text(canvas,
                           self.texture_creator,
                           self.font,
                           self.x + FRAME_PADDING,
-                          self.y + FRAME_PADDING + ROW_OFFSET + 5,
+                          self.y + FRAME_PADDING + ROW_OFFSET + LINE_OFFSET,
                           "PC:      SP:",
-                          Color::from(TEXT_COLOR))?;
+                          Color::from(TEXT_COLOR),
+        )?;
         util::render_text(canvas,
                           self.texture_creator,
                           self.font,
                           self.x + FRAME_PADDING,
-                          self.y + FRAME_PADDING + ROW_OFFSET + 5,
+                          self.y + FRAME_PADDING + ROW_OFFSET + LINE_OFFSET,
                           format!("   ${:04X}    ${:02X}", state.get_pc(), state.get_sp()).as_str(),
-                          Color::from(TEXT_COLOR_DARK))?;
+                          Color::from(TEXT_COLOR_DARK),
+        )?;
+
+        util::render_text(canvas,
+                          self.texture_creator,
+                          self.font,
+                          self.x + FRAME_PADDING,
+                          self.y + FRAME_PADDING + (ROW_OFFSET * 2) + 15,
+                          "N",
+                          if state.get_status(state::SR_MASK_NEGATIVE) { Color::from(TEXT_COLOR) } else { Color::from(TEXT_COLOR_DARK) },
+        )?;
+        util::render_text(canvas,
+                          self.texture_creator,
+                          self.font,
+                          self.x + FRAME_PADDING,
+                          self.y + FRAME_PADDING + (ROW_OFFSET * 2) + 15,
+                          "N",
+                          if state.get_status(state::SR_MASK_NEGATIVE) { Color::from(TEXT_COLOR) } else { Color::from(TEXT_COLOR_DARK) },
+        )?;
+        util::render_text(canvas,
+                          self.texture_creator,
+                          self.font,
+                          self.x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 1),
+                          self.y + FRAME_PADDING + (ROW_OFFSET * 2) + 15,
+                          "V",
+                          if state.get_status(state::SR_MASK_OVERFLOW) { Color::from(TEXT_COLOR) } else { Color::from(TEXT_COLOR_DARK) },
+        )?;
+        util::render_text(canvas,
+                          self.texture_creator,
+                          self.font,
+                          self.x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 4),
+                          self.y + FRAME_PADDING + (ROW_OFFSET * 2) + 15,
+                          "D",
+                          if state.get_status(state::SR_MASK_DECIMAL) { Color::from(TEXT_COLOR) } else { Color::from(TEXT_COLOR_DARK) },
+        )?;
+        util::render_text(canvas,
+                          self.texture_creator,
+                          self.font,
+                          self.x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 5),
+                          self.y + FRAME_PADDING + (ROW_OFFSET * 2) + 15,
+                          "I",
+                          if state.get_status(state::SR_MASK_INTERRUPT) { Color::from(TEXT_COLOR) } else { Color::from(TEXT_COLOR_DARK) },
+        )?;
+        util::render_text(canvas,
+                          self.texture_creator,
+                          self.font,
+                          self.x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 6),
+                          self.y + FRAME_PADDING + (ROW_OFFSET * 2) + 15,
+                          "Z",
+                          if state.get_status(state::SR_MASK_ZERO) { Color::from(TEXT_COLOR) } else { Color::from(TEXT_COLOR_DARK) },
+        )?;
+        util::render_text(canvas,
+                          self.texture_creator,
+                          self.font,
+                          self.x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 7),
+                          self.y + FRAME_PADDING + (ROW_OFFSET * 2) + 15,
+                          "C",
+                          if state.get_status(state::SR_MASK_CARRY) { Color::from(TEXT_COLOR) } else { Color::from(TEXT_COLOR_DARK) },
+        )?;
+
+
+
+
 
 
         Ok(())

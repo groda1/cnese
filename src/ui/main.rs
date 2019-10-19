@@ -92,6 +92,7 @@ pub fn run(cpu: &mut Cpu, bus: &mut Databus) -> Result<(), String> {
                 _ => {}
             }
         }
+
     }
 
     Ok(())
