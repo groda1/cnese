@@ -43,10 +43,10 @@ pub fn render_window(canvas: &mut Canvas<Window>,
     let rect = rect!(x,y,w,h);
 
     canvas.set_draw_color(bg_color);
-    canvas.fill_rect(rect);
+    canvas.fill_rect(rect)?;
 
     canvas.set_draw_color(border_color);
-    canvas.draw_rect(rect);
+    canvas.draw_rect(rect)?;
 
     Ok(())
 }

@@ -15,7 +15,6 @@ mod ui;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    println!("args {:?}", args);
 
     let path = &args[1];
 
@@ -24,6 +23,6 @@ fn main() {
     let mut bus = Databus::new();
     bus.load_rom(rom);
 
-    ui::main::run(&mut cpu, &mut bus);
+    let _result = ui::main::run(&mut cpu, &mut bus).unwrap();
 }
 

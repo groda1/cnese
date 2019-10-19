@@ -1,23 +1,17 @@
 extern crate sdl2;
 
-use std::env;
 use std::path::Path;
-use std::collections::HashMap;
 
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 
-use sdl2::render::{TextureQuery, Canvas, TextureCreator};
-use sdl2::Sdl;
-use sdl2::video::{Window, WindowContext};
-use sdl2::ttf::Font;
+use sdl2::render::Canvas;
+use sdl2::video::Window;
 use sdl2::pixels::Color;
 
-use super::super::cpu::databus;
 use super::super::cpu::databus::Databus;
 use super::super::cpu::cpu::Cpu;
 use super::super::instruction;
-use super::super::instruction::Instruction;
 
 use super::debug::{InstructionWindow, RegisterWindow};
 
@@ -31,7 +25,7 @@ fn render(canvas: &mut Canvas<Window>,
           instr_window: &mut InstructionWindow,
           register_window: &mut RegisterWindow,
           cpu: &Cpu,
-          bus: &Databus) {
+          _bus: &Databus) -> Result<(), String> {
     let pc = cpu.get_state().get_pc();
 
     canvas.set_draw_color(Color::from(BACKGROUND_COLOR));
@@ -39,11 +33,13 @@ fn render(canvas: &mut Canvas<Window>,
 
 
     instr_window.readjust(pc as usize);
-    instr_window.render(canvas, pc);
+    instr_window.render(canvas, pc)?;
 
-    register_window.render(canvas, cpu.get_state());
+    register_window.render(canvas, cpu.get_state())?;
 
     canvas.present();
+
+    Ok(())
 }
 
 pub fn run(cpu: &mut Cpu, bus: &mut Databus) -> Result<(), String> {
@@ -67,18 +63,20 @@ pub fn run(cpu: &mut Cpu, bus: &mut Databus) -> Result<(), String> {
     let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
     let texture_creator = canvas.texture_creator();
 
-    // Load a font
-    let mut font = ttf_context.load_font(font_path, 128)?;
+    let font = ttf_context.load_font(font_path, 128)?;
 
-    let mut instr_window = InstructionWindow::new(&deassembled_instructions, &texture_creator, &font, 25);
-    instr_window.set_pos(20, 20);
+    let mut instr_window = InstructionWindow::new(
+        &deassembled_instructions,
+        &texture_creator,
+        &font,
+        25);
 
     let mut register_window = RegisterWindow::new(&texture_creator, &font);
+
+    instr_window.set_pos(20, 20);
     register_window.set_pos(350, 20);
 
-    render(&mut canvas, &mut instr_window, &mut register_window, cpu, bus);
-
-    //render(&mut canvas, &texture_creator, &font, cpu, bus, &deassembled_instructions);
+    render(&mut canvas, &mut instr_window, &mut register_window, cpu, bus)?;
 
     'mainloop: loop {
         for event in sdl_context.event_pump()?.poll_iter() {
@@ -87,7 +85,7 @@ pub fn run(cpu: &mut Cpu, bus: &mut Databus) -> Result<(), String> {
                 Event::Quit { .. } => break 'mainloop,
                 Event::KeyDown { keycode: Some(Keycode::Space), .. } => {
                     cpu.tick(bus);
-                    render(&mut canvas, &mut instr_window, &mut register_window, cpu, bus);
+                    render(&mut canvas, &mut instr_window, &mut register_window, cpu, bus)?;
                 }
                 _ => {}
             }

@@ -58,7 +58,7 @@ impl<'a> RegisterWindow<'a> {
                             REGISTER_WINDOW_HEIGHT,
                             Color::from(FRAME_BORDER_COLOR),
                             Color::from(FRAME_BACKGROUND_COLOR),
-        );
+        )?;
 
         util::render_text(canvas,
                           self.texture_creator,
@@ -240,9 +240,9 @@ impl<'a> InstructionWindow<'a> {
                             self.x,
                             self.y,
                             INSTRUCTION_WINDOW_WIDTH,
-                            (self.height as u32 * ROW_OFFSET as u32 + (FRAME_PADDING as u32 * 2)),
+                            self.height as u32 * ROW_OFFSET as u32 + (FRAME_PADDING as u32 * 2),
                             Color::from(FRAME_BORDER_COLOR),
-                            Color::from(FRAME_BACKGROUND_COLOR));
+                            Color::from(FRAME_BACKGROUND_COLOR))?;
 
         let mut memory_addr = self.instruction_rom_offset;
 
@@ -258,7 +258,8 @@ impl<'a> InstructionWindow<'a> {
                                   self.x + FRAME_PADDING,
                                   self.y + i as i32 * ROW_OFFSET + FRAME_PADDING,
                                   ">",
-                                  Color::from(TEXT_COLOR))?;
+                                  Color::from(TEXT_COLOR)
+                )?;
             }
 
             util::render_text(canvas,
@@ -267,14 +268,16 @@ impl<'a> InstructionWindow<'a> {
                               self.x + TEXT_ADDR_OFFSET + FRAME_PADDING,
                               self.y + i as i32 * ROW_OFFSET + FRAME_PADDING,
                               format!("{:04X}", memory_addr).as_str(),
-                              Color::from(TEXT_COLOR_DARK))?;
+                              Color::from(TEXT_COLOR_DARK)
+            )?;
 
             util::render_text(canvas,
                               self.texture_creator,
                               self.font,
                               self.x + TEXT_INSTRUCTION_OFFSET + FRAME_PADDING,
                               self.y + i as i32 * ROW_OFFSET + FRAME_PADDING,
-                              instruction.format().as_str(), Color::from(TEXT_COLOR))?;
+                              instruction.format().as_str(), Color::from(TEXT_COLOR)
+            )?;
 
             memory_addr += instruction.get_size() as usize;
         }
