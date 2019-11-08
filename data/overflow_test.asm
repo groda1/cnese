@@ -2,8 +2,8 @@
     org $4020
 
     ;SEC      ; 0 - 1 = -1, returns V = 0
-    LDA #$00
-    SBC #$01
+    LDA #$84
+    SBC #$20
 
 
     LDA #$05

@@ -5,7 +5,6 @@ use super::addressing::AddressingMode;
 
 use enum_map::EnumMap;
 
-
 #[derive(Clone, Copy, Enum)]
 enum Operation {
     ADC,
@@ -48,7 +47,23 @@ impl Operation {
     }
 
     fn get_fn(&self) -> OperationFn {
-        OPERATION_FN_MAP[*self]
+        match *self {
+            Operation::ADC => ADC,
+            Operation::CLC => CLC,
+            Operation::CLD => CLD,
+            Operation::CLI => CLI,
+            Operation::CLV => CLV,
+            Operation::INX => INX,
+            Operation::INY => INY,
+            Operation::LDA => LDA,
+            Operation::JMP => JMP,
+            Operation::NOP => NOP,
+            Operation::SBC => SBC,
+            Operation::SEC => SEC,
+            Operation::SED => SED,
+            Operation::SEI => SEI,
+            Operation::UNKNOWN => NOT_IMPLEMENTED
+        }
     }
 }
 
@@ -59,29 +74,11 @@ const NOT_IMPLEMENTED: OperationFn = |_state: &mut State, _bus: &mut Databus, _o
 };
 
 const ADC: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
-    let sum = (state.acc as u16).wrapping_add(operand).wrapping_add(state.get_status(state::SR_MASK_CARRY) as u16);
-    let carry = sum > 0xff;
-    let overflow = (!(state.acc as u16 ^ operand) & (state.acc as u16 ^ sum) & 0x80) > 0;
-
-    state.acc = sum as u8;
-
-    state.set_status(state::SR_MASK_NEGATIVE, state.acc >= 128);
-    state.set_status(state::SR_MASK_ZERO, state.acc == 0);
-    state.set_status(state::SR_MASK_CARRY, carry);
-    state.set_status(state::SR_MASK_OVERFLOW, overflow);
+    adc(state, operand as u8);
 };
 
 const SBC: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
-    let sum = (state.acc as u16).wrapping_sub(operand).wrapping_sub(state.get_status(state::SR_MASK_CARRY) as u16);
-    let carry = sum > 0xff;
-    let overflow = (!(state.acc as u16 ^ operand) & (state.acc as u16 ^ sum) & 0x80) > 0;
-
-    state.acc = sum as u8;
-
-    state.set_status(state::SR_MASK_NEGATIVE, state.acc >= 128);
-    state.set_status(state::SR_MASK_ZERO, state.acc == 0);
-    state.set_status(state::SR_MASK_CARRY, carry);
-    state.set_status(state::SR_MASK_OVERFLOW, overflow);
+    adc(state, !(operand as u8));
 };
 
 const CLC: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
@@ -139,27 +136,16 @@ const SEI: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| 
     state.set_status(state::SR_MASK_INTERRUPT, true);
 };
 
-lazy_static! {
-    static ref OPERATION_FN_MAP: EnumMap<Operation, OperationFn> = {
-        let map = enum_map! {
-            Operation::ADC => ADC,
-            Operation::CLC => CLC,
-            Operation::CLD => CLD,
-            Operation::CLI => CLI,
-            Operation::CLV => CLV,
-            Operation::INX => INX,
-            Operation::INY => INY,
-            Operation::LDA => LDA,
-            Operation::JMP => JMP,
-            Operation::NOP => NOP,
-            Operation::SBC => SBC,
-            Operation::SEC => SEC,
-            Operation::SED => SED,
-            Operation::SEI => SEI,
-            Operation::UNKNOWN => NOT_IMPLEMENTED
-        };
-        map
-    };
+fn adc(state: &mut State, operand: u8) {
+    let sum = state.acc.wrapping_add(operand).wrapping_add(state.get_status(state::SR_MASK_CARRY) as u8);
+    let carry = (operand as u16 + state.acc as u16 + state.get_status(state::SR_MASK_CARRY) as u16) > 0xff;
+    let overflow = (!(state.acc ^ operand) & (state.acc ^ sum) & 0x80) > 0;
+    state.acc = sum;
+
+    state.set_status(state::SR_MASK_NEGATIVE, state.acc >= 128);
+    state.set_status(state::SR_MASK_ZERO, state.acc == 0);
+    state.set_status(state::SR_MASK_CARRY, carry);
+    state.set_status(state::SR_MASK_OVERFLOW, overflow);
 }
 
 lazy_static! {
