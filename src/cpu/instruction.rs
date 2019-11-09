@@ -3,9 +3,7 @@ use super::state::State;
 use super::state;
 use super::addressing::AddressingMode;
 
-use enum_map::EnumMap;
-
-#[derive(Clone, Copy, Enum)]
+#[derive(Clone, Copy)]
 enum Operation {
     ADC,
     CLC,

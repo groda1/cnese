@@ -1,9 +1,6 @@
 #[macro_use]
 extern crate lazy_static;
 
-#[macro_use]
-extern crate enum_map;
-
 mod cpu;
 use cpu::cpu::Cpu;
 use cpu::databus::Databus;

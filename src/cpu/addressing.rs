@@ -1,10 +1,7 @@
 use super::state::State;
 use super::databus::Databus;
 
-use enum_map::EnumMap;
-
 pub type AddressingModeFn = fn(state: &State, bus: &Databus, operand: u16) -> u16;
-
 
 pub const DO_NOTHING: AddressingModeFn = |_state: &State, _bus: &Databus, _operand: u16| -> u16 { 0 };
 pub const IMMEDIATE: AddressingModeFn = |_state: &State, _bus: &Databus, operand: u16| -> u16 { operand };
@@ -53,7 +50,7 @@ pub const INDIRECT_INDEXED_Y: AddressingModeFn = |state: &State, bus: &Databus, 
 };
 
 
-#[derive(Clone, Copy, Enum)]
+#[derive(Clone, Copy)]
 pub enum AddressingMode {
     Unknown,
     Implied,
@@ -75,9 +72,22 @@ impl AddressingMode {
         self.get_fn()(state, bus, operand)
     }
 
-
     fn get_fn(&self) -> AddressingModeFn {
-        ADDRESS_MODE_FN_MAP[*self]
+        match *self {
+            AddressingMode::Implied => DO_NOTHING,
+            AddressingMode::Immediate => IMMEDIATE,
+            AddressingMode::Absolute => ABSOLUTE,
+            AddressingMode::AbsoluteIndexedX => ABSOLUTE_INDEXED_X,
+            AddressingMode::AbsoluteIndexedY => ABSOLUTE_INDEXED_Y,
+            AddressingMode::Zeropage => ZEROPAGE,
+            AddressingMode::ZeropageIndexedX => ZEROPAGE_INDEXED_X,
+            AddressingMode::Relative => RELATIVE,
+            AddressingMode::Accumulator => DO_NOTHING,
+            AddressingMode::Indirect => INDIRECT,
+            AddressingMode::IndexedIndirectX => INDEXED_INDIRECT_X,
+            AddressingMode::IndirectIndexedY => INDIRECT_INDEXED_Y,
+            AddressingMode::Unknown => DO_NOTHING
+        }
     }
 
     pub fn format(&self, operand: u16) -> String {
@@ -97,25 +107,4 @@ impl AddressingMode {
             _ => format!("##")
         }
     }
-}
-
-lazy_static! {
-    static ref ADDRESS_MODE_FN_MAP: EnumMap<AddressingMode, AddressingModeFn> = {
-        let map = enum_map! {
-            AddressingMode::Implied => DO_NOTHING,
-            AddressingMode::Immediate => IMMEDIATE,
-            AddressingMode::Absolute => ABSOLUTE,
-            AddressingMode::AbsoluteIndexedX => ABSOLUTE_INDEXED_X,
-            AddressingMode::AbsoluteIndexedY => ABSOLUTE_INDEXED_Y,
-            AddressingMode::Zeropage => ZEROPAGE,
-            AddressingMode::ZeropageIndexedX => ZEROPAGE_INDEXED_X,
-            AddressingMode::Relative => RELATIVE,
-            AddressingMode::Accumulator => DO_NOTHING,
-            AddressingMode::Indirect => INDIRECT,
-            AddressingMode::IndexedIndirectX => INDEXED_INDIRECT_X,
-            AddressingMode::IndirectIndexedY => INDIRECT_INDEXED_Y,
-            AddressingMode::Unknown => DO_NOTHING,
-        };
-        map
-    };
 }
