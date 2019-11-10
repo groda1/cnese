@@ -2,6 +2,29 @@
     org $4020
 
 kek:
+
+    LDA #$01
+    ASL
+    ASL
+    ASL
+    ASL
+    ASL
+    ASL
+    ASL
+    ASL
+
+    LDA #$01
+    STA $46
+    ASL $46
+    ASL $46
+    ASL $46
+    ASL $46
+    ASL $46
+    ASL $46
+    ASL $46
+    ASL $46
+
+
     LDA #$FF
 
     DEX

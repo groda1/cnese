@@ -55,7 +55,6 @@ impl State {
         self.stack_pointer
     }
 
-
     pub fn get_status(&self, mask: u8) -> bool {
         self.status & mask > 0
     }
@@ -67,7 +66,6 @@ impl State {
             self.status &= !field;
         }
     }
-
 }
 
 

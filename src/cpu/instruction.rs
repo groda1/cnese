@@ -3,10 +3,13 @@ use super::state::State;
 use super::state;
 use super::addressing::AddressingMode;
 
+#[allow(non_camel_case_types)]
 #[derive(Clone, Copy)]
 enum Operation {
     ADC,
     AND,
+    ASL_A,
+    ASL_M,
     CLC,
     CLD,
     CLI,
@@ -36,6 +39,8 @@ impl Operation {
         match *self {
             Operation::ADC => "ADC",
             Operation::AND => "AND",
+            Operation::ASL_A => "ASL",
+            Operation::ASL_M => "ASL",
             Operation::CLC => "CLC",
             Operation::CLD => "CLD",
             Operation::CLI => "CLI",
@@ -64,6 +69,8 @@ impl Operation {
         match *self {
             Operation::ADC => ADC,
             Operation::AND => AND,
+            Operation::ASL_A => ASL_A,
+            Operation::ASL_M => ASL_M,
             Operation::CLC => CLC,
             Operation::CLD => CLD,
             Operation::CLI => CLI,
@@ -104,6 +111,26 @@ const AND: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
 
     state.set_status(state::SR_MASK_NEGATIVE, state.acc >= 128);
     state.set_status(state::SR_MASK_ZERO, state.acc == 0);
+};
+
+const ASL_A: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+    let overflow = (state.acc & 0x80) > 0;
+    state.acc <<= 1;
+
+    state.set_status(state::SR_MASK_CARRY, overflow);
+    state.set_status(state::SR_MASK_NEGATIVE, state.acc >= 128);
+    state.set_status(state::SR_MASK_ZERO, state.acc == 0);
+};
+
+const ASL_M: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+    let mut value = bus.read(operand);
+    let overflow = (value & 0x80) > 0;
+    value <<= 1;
+    bus.write(operand, value);
+
+    state.set_status(state::SR_MASK_CARRY, overflow);
+    state.set_status(state::SR_MASK_NEGATIVE, value >= 128);
+    state.set_status(state::SR_MASK_ZERO, value == 0);
 };
 
 const SBC: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
@@ -248,6 +275,12 @@ lazy_static! {
         opcodes[0x39] = Opcode::new(Operation::AND, AddressingMode::AbsoluteIndexedY, 3, 4, true);
         opcodes[0x21] = Opcode::new(Operation::AND, AddressingMode::IndexedIndirectX, 2, 6, false);
         opcodes[0x31] = Opcode::new(Operation::AND, AddressingMode::IndirectIndexedY, 2, 5, true);
+
+        opcodes[0x0a] = Opcode::new(Operation::ASL_A, AddressingMode::Accumulator, 1, 2, false);
+        opcodes[0x06] = Opcode::new(Operation::ASL_M, AddressingMode::Zeropage, 2, 5, false);
+        opcodes[0x16] = Opcode::new(Operation::ASL_M, AddressingMode::ZeropageIndexedX, 2, 6, false);
+        opcodes[0x0e] = Opcode::new(Operation::ASL_M, AddressingMode::Absolute, 3, 6, false);
+        opcodes[0x1e] = Opcode::new(Operation::ASL_M, AddressingMode::AbsoluteIndexedX, 3, 7, false);
 
         opcodes[0x18] = Opcode::new(Operation::CLC, AddressingMode::Implied, 1, 2, false);
         opcodes[0xd8] = Opcode::new(Operation::CLD, AddressingMode::Implied, 1, 2, false);
