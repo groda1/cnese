@@ -25,6 +25,10 @@ pub const ZEROPAGE_INDEXED_X: AddressingModeFn = |state: &State, _bus: &Databus,
     ((operand as u8).wrapping_add(state.x)) as u16
 };
 
+pub const ZEROPAGE_INDEXED_Y: AddressingModeFn = |state: &State, _bus: &Databus, operand: u16| -> u16 {
+    ((operand as u8).wrapping_add(state.y)) as u16
+};
+
 pub const INDIRECT: AddressingModeFn = |_state: &State, bus: &Databus, operand: u16| -> u16 {
     let lo = bus.read(operand);
     let hi = bus.read(operand + 1);
@@ -60,6 +64,7 @@ pub enum AddressingMode {
     AbsoluteIndexedY,
     Zeropage,
     ZeropageIndexedX,
+    ZeropageIndexedY,
     Relative,
     Accumulator,
     Indirect,
@@ -81,6 +86,7 @@ impl AddressingMode {
             AddressingMode::AbsoluteIndexedY => ABSOLUTE_INDEXED_Y,
             AddressingMode::Zeropage => ZEROPAGE,
             AddressingMode::ZeropageIndexedX => ZEROPAGE_INDEXED_X,
+            AddressingMode::ZeropageIndexedY=> ZEROPAGE_INDEXED_Y,
             AddressingMode::Relative => RELATIVE,
             AddressingMode::Accumulator => DO_NOTHING,
             AddressingMode::Indirect => INDIRECT,
@@ -99,6 +105,7 @@ impl AddressingMode {
             AddressingMode::AbsoluteIndexedY => format!("${:04X},Y", operand),
             AddressingMode::Zeropage => format!("${:02X}", operand),
             AddressingMode::ZeropageIndexedX => format!("${:02X},X", operand),
+            AddressingMode::ZeropageIndexedY => format!("${:02X},Y", operand),
             AddressingMode::Relative => format! {"${:02X}", operand},
             AddressingMode::Accumulator => format! {"A"},
             AddressingMode::Indirect => format! {"(${:04X})", operand},

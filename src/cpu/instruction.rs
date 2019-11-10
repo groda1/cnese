@@ -6,6 +6,7 @@ use super::addressing::AddressingMode;
 #[derive(Clone, Copy)]
 enum Operation {
     ADC,
+    AND,
     CLC,
     CLD,
     CLI,
@@ -30,6 +31,7 @@ impl Operation {
     fn as_str(&self) -> &'static str {
         match *self {
             Operation::ADC => "ADC",
+            Operation::AND => "AND",
             Operation::CLC => "CLC",
             Operation::CLD => "CLD",
             Operation::CLI => "CLI",
@@ -53,6 +55,7 @@ impl Operation {
     fn get_fn(&self) -> OperationFn {
         match *self {
             Operation::ADC => ADC,
+            Operation::AND => AND,
             Operation::CLC => CLC,
             Operation::CLD => CLD,
             Operation::CLI => CLI,
@@ -82,6 +85,13 @@ const NOT_IMPLEMENTED: OperationFn = |_state: &mut State, _bus: &mut Databus, _o
 
 const ADC: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     adc(state, operand as u8);
+};
+
+const AND: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+    state.acc &= operand as u8;
+
+    state.set_status(state::SR_MASK_NEGATIVE, state.acc >= 128);
+    state.set_status(state::SR_MASK_ZERO, state.acc == 0);
 };
 
 const SBC: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
@@ -188,6 +198,15 @@ lazy_static! {
         opcodes[0x61] = Opcode::new(Operation::ADC, AddressingMode::IndexedIndirectX, 2, 6, false);
         opcodes[0x71] = Opcode::new(Operation::ADC, AddressingMode::IndirectIndexedY, 2, 5, true);
 
+        opcodes[0x29] = Opcode::new(Operation::AND, AddressingMode::Immediate, 2, 2, false);
+        opcodes[0x25] = Opcode::new(Operation::AND, AddressingMode::Zeropage, 2, 3, false);
+        opcodes[0x35] = Opcode::new(Operation::AND, AddressingMode::ZeropageIndexedX, 2, 4, false);
+        opcodes[0x2d] = Opcode::new(Operation::AND, AddressingMode::Absolute, 3, 4, false);
+        opcodes[0x3d] = Opcode::new(Operation::AND, AddressingMode::AbsoluteIndexedX, 3, 4, true);
+        opcodes[0x39] = Opcode::new(Operation::AND, AddressingMode::AbsoluteIndexedY, 3, 4, true);
+        opcodes[0x21] = Opcode::new(Operation::AND, AddressingMode::IndexedIndirectX, 2, 6, false);
+        opcodes[0x31] = Opcode::new(Operation::AND, AddressingMode::IndirectIndexedY, 2, 5, true);
+
         opcodes[0x18] = Opcode::new(Operation::CLC, AddressingMode::Implied, 1, 2, false);
         opcodes[0xd8] = Opcode::new(Operation::CLD, AddressingMode::Implied, 1, 2, false);
         opcodes[0x58] = Opcode::new(Operation::CLI, AddressingMode::Implied, 1, 2, false);
@@ -213,9 +232,9 @@ lazy_static! {
 
         opcodes[0xa0] = Opcode::new(Operation::LDY, AddressingMode::Immediate, 2, 2, false);
         opcodes[0xa4] = Opcode::new(Operation::LDY, AddressingMode::Zeropage, 2, 3, false);
-        opcodes[0xb4] = Opcode::new(Operation::LDY, AddressingMode::ZeropageIndexedY, 2, 4, false);
+        opcodes[0xb4] = Opcode::new(Operation::LDY, AddressingMode::ZeropageIndexedX, 2, 4, false);
         opcodes[0xac] = Opcode::new(Operation::LDY, AddressingMode::Absolute, 3, 4, false);
-        opcodes[0xbc] = Opcode::new(Operation::LDY, AddressingMode::AbsoluteIndexedY, 3, 4, true);
+        opcodes[0xbc] = Opcode::new(Operation::LDY, AddressingMode::AbsoluteIndexedX, 3, 4, true);
 
         opcodes[0xea] = Opcode::new(Operation::NOP, AddressingMode::Implied, 1, 2, false);
 
