@@ -9,11 +9,11 @@ use sdl2::render::Canvas;
 use sdl2::video::Window;
 use sdl2::pixels::Color;
 
-use super::super::cpu::databus::Databus;
-use super::super::cpu::cpu::Cpu;
-use super::super::instruction;
+use super::debug;
+use super::debug::{DebugWindow, InstructionWindow};
 
-use super::debug::{InstructionWindow, RegisterWindow};
+use crate::nes::nes::NES;
+use crate::cpu::instruction;
 
 static SCREEN_WIDTH: u32 = 1200;
 static SCREEN_HEIGHT: u32 = 600;
@@ -22,31 +22,24 @@ static BACKGROUND_COLOR: (u8, u8, u8, u8) = (128, 128, 128, 255);
 
 
 fn render(canvas: &mut Canvas<Window>,
-          instr_window: &mut InstructionWindow,
-          register_window: &mut RegisterWindow,
-          cpu: &Cpu,
-          _bus: &Databus) -> Result<(), String> {
-    let pc = cpu.get_state().get_pc();
+          windows: &mut Vec<&mut DebugWindow>,
+          nes: &NES) -> Result<(), String> {
 
     canvas.set_draw_color(Color::from(BACKGROUND_COLOR));
     canvas.clear();
 
+    for window in windows {
+        window.render(canvas, nes)?;
+    }
 
-    instr_window.readjust(pc as usize);
-    instr_window.render(canvas, pc)?;
-
-    register_window.render(canvas, cpu.get_state())?;
 
     canvas.present();
 
     Ok(())
 }
 
-pub fn run(cpu: &mut Cpu, bus: &mut Databus) -> Result<(), String> {
-    let deassembled_instructions = instruction::deassemble(bus.get_cartridge());
-
-    let pc = cpu.get_state().get_pc();
-
+pub fn run(nes: &mut NES) -> Result<(), String> {
+    let deassembled_instructions = instruction::deassemble(nes.get_databus().get_cartridge());
 
     let font_path: &Path = Path::new("src/ui/resources/nesfont.fon");
 
@@ -65,18 +58,29 @@ pub fn run(cpu: &mut Cpu, bus: &mut Databus) -> Result<(), String> {
 
     let font = ttf_context.load_font(font_path, 128)?;
 
-    let mut instr_window = InstructionWindow::new(
-        &deassembled_instructions,
-        &texture_creator,
-        &font,
-        25);
 
-    let mut register_window = RegisterWindow::new(&texture_creator, &font);
+    let mut windows = Vec::new();
 
+    let mut instr_window = debug::create_instruction_window(&texture_creator,
+                                                            &font,
+                                                            25,
+                                                            deassembled_instructions);
     instr_window.set_pos(20, 20);
-    register_window.set_pos(350, 20);
+    instr_window.set_active(true);
+    windows.push(&mut instr_window);
 
-    render(&mut canvas, &mut instr_window, &mut register_window, cpu, bus)?;
+    let mut register_window = debug::create_register_window(&texture_creator, &font);
+    register_window.set_pos(350, 20);
+    register_window.set_active(true);
+    windows.push(&mut register_window);
+
+    let mut zeropage_window = debug::create_memory_window(&texture_creator, &font, 0, 256, 16);
+    zeropage_window.set_pos(700, 20);
+    zeropage_window.set_active(true);
+    windows.push(&mut zeropage_window);
+
+
+    render(&mut canvas, &mut windows, nes)?;
 
     'mainloop: loop {
         for event in sdl_context.event_pump()?.poll_iter() {
@@ -84,8 +88,9 @@ pub fn run(cpu: &mut Cpu, bus: &mut Databus) -> Result<(), String> {
                 Event::KeyDown { keycode: Some(Keycode::Escape), .. } |
                 Event::Quit { .. } => break 'mainloop,
                 Event::KeyDown { keycode: Some(Keycode::Space), .. } => {
-                    cpu.tick(bus);
-                    render(&mut canvas, &mut instr_window, &mut register_window, cpu, bus)?;
+                    nes.tick();
+
+                    render(&mut canvas, &mut windows, nes)?;
                 }
                 _ => {}
             }

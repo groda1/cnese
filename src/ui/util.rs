@@ -12,12 +12,33 @@ macro_rules! rect (
 
 
 pub fn render_text(canvas: &mut Canvas<Window>,
-               texture_creator: &TextureCreator<WindowContext>,
-               font: &Font,
-               x: i32,
-               y: i32,
-               text: &str,
-               color: Color) -> Result<(), String> {
+                   texture_creator: &TextureCreator<WindowContext>,
+                   font: &Font,
+                   x: i32,
+                   y: i32,
+                   text: &str,
+                   color: Color) -> Result<(), String> {
+    _render_text(canvas, texture_creator, font, x, y, text, color, 2)
+}
+
+pub fn render_text_small(canvas: &mut Canvas<Window>,
+                   texture_creator: &TextureCreator<WindowContext>,
+                   font: &Font,
+                   x: i32,
+                   y: i32,
+                   text: &str,
+                   color: Color) -> Result<(), String> {
+    _render_text(canvas, texture_creator, font, x, y, text, color, 1)
+}
+
+fn _render_text(canvas: &mut Canvas<Window>,
+                texture_creator: &TextureCreator<WindowContext>,
+                font: &Font,
+                x: i32,
+                y: i32,
+                text: &str,
+                color: Color,
+                scale: u32) -> Result<(), String> {
     let surface = font.render(text).
         blended(color).map_err(|e| e.to_string())?;
     let texture = texture_creator.create_texture_from_surface(&surface)
@@ -25,7 +46,7 @@ pub fn render_text(canvas: &mut Canvas<Window>,
 
     let TextureQuery { width, height, .. } = texture.query();
 
-    let target = rect!(x,y, width * 2, height * 2);
+    let target = rect!(x,y, width * scale, height * scale);
 
     canvas.copy(&texture, None, Some(target))?;
 

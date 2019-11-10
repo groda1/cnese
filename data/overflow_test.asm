@@ -5,7 +5,7 @@
     LDA #$84
     SBC #$20
 
-
+kek:
     LDA #$05
     SBC #$03
 
@@ -69,3 +69,5 @@
     CLC      ; Note: CLC, not SEC
     LDA #$C0 ; -64 - 64 - 1 = -129, returns V = 1
     SBC #$40
+
+	JMP kek

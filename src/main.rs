@@ -6,6 +6,9 @@ use cpu::cpu::Cpu;
 use cpu::databus::Databus;
 use cpu::instruction;
 
+mod nes;
+use nes::nes::NES;
+
 mod util;
 mod ui;
 
@@ -23,10 +26,12 @@ fn main() {
     println!("{} {}", result, v);
 
     let rom = util::file::read_file(path);
-    let mut cpu = Cpu::new();
-    let mut bus = Databus::new();
-    bus.load_rom(rom);
 
-    let _result = ui::main::run(&mut cpu, &mut bus).unwrap();
+
+
+    let mut nes = NES::new();
+    nes.load_rom(rom);
+
+    let _result = ui::main::run(&mut nes).unwrap();
 }
 
