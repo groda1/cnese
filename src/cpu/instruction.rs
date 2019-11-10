@@ -11,6 +11,10 @@ enum Operation {
     CLD,
     CLI,
     CLV,
+    DEC,
+    DEX,
+    DEY,
+    INC,
     INX,
     INY,
     JMP,
@@ -36,6 +40,10 @@ impl Operation {
             Operation::CLD => "CLD",
             Operation::CLI => "CLI",
             Operation::CLV => "CLV",
+            Operation::DEC => "DEC",
+            Operation::DEX => "DEX",
+            Operation::DEY => "DEY",
+            Operation::INC => "INC",
             Operation::INX => "INX",
             Operation::INY => "INY",
             Operation::JMP => "JMP",
@@ -60,6 +68,10 @@ impl Operation {
             Operation::CLD => CLD,
             Operation::CLI => CLI,
             Operation::CLV => CLV,
+            Operation::DEC => DEC,
+            Operation::DEX => DEX,
+            Operation::DEY => DEY,
+            Operation::INC => INC,
             Operation::INX => INX,
             Operation::INY => INY,
             Operation::LDA => LDA,
@@ -112,6 +124,36 @@ const CLI: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| 
 
 const CLV: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
     state.set_status(state::SR_MASK_OVERFLOW, false);
+};
+
+const DEC: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+    let value = bus.read(operand).wrapping_sub(1);
+    bus.write(operand, value);
+
+    state.set_status(state::SR_MASK_NEGATIVE, value >= 128);
+    state.set_status(state::SR_MASK_ZERO, value == 0);
+};
+
+const DEX: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+    state.x = state.x.wrapping_sub(1);
+
+    state.set_status(state::SR_MASK_NEGATIVE, state.x >= 128);
+    state.set_status(state::SR_MASK_ZERO, state.x == 0);
+};
+
+const DEY: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+    state.y = state.y.wrapping_sub(1);
+
+    state.set_status(state::SR_MASK_NEGATIVE, state.y >= 128);
+    state.set_status(state::SR_MASK_ZERO, state.y == 0);
+};
+
+const INC: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+    let value = bus.read(operand).wrapping_add(1);
+    bus.write(operand, value);
+
+    state.set_status(state::SR_MASK_NEGATIVE, value >= 128);
+    state.set_status(state::SR_MASK_ZERO, value == 0);
 };
 
 const INX: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
@@ -211,6 +253,19 @@ lazy_static! {
         opcodes[0xd8] = Opcode::new(Operation::CLD, AddressingMode::Implied, 1, 2, false);
         opcodes[0x58] = Opcode::new(Operation::CLI, AddressingMode::Implied, 1, 2, false);
         opcodes[0xb8] = Opcode::new(Operation::CLV, AddressingMode::Implied, 1, 2, false);
+
+        opcodes[0xc6] = Opcode::new(Operation::DEC, AddressingMode::Zeropage, 2, 5, false);
+        opcodes[0xd6] = Opcode::new(Operation::DEC, AddressingMode::ZeropageIndexedX, 2, 6, false);
+        opcodes[0xce] = Opcode::new(Operation::DEC, AddressingMode::Absolute, 3, 6, false);
+        opcodes[0xde] = Opcode::new(Operation::DEC, AddressingMode::AbsoluteIndexedX, 3, 7, false);
+
+        opcodes[0xca] = Opcode::new(Operation::DEX, AddressingMode::Implied, 1, 2, false);
+        opcodes[0x88] = Opcode::new(Operation::DEY, AddressingMode::Implied, 1, 2, false);
+
+        opcodes[0xe6] = Opcode::new(Operation::INC, AddressingMode::Zeropage, 2, 5, false);
+        opcodes[0xf6] = Opcode::new(Operation::INC, AddressingMode::ZeropageIndexedX, 2, 6, false);
+        opcodes[0xee] = Opcode::new(Operation::INC, AddressingMode::Absolute, 3, 6, false);
+        opcodes[0xfe] = Opcode::new(Operation::INC, AddressingMode::AbsoluteIndexedX, 3, 7, false);
 
         opcodes[0xc8] = Opcode::new(Operation::INY, AddressingMode::Implied, 1, 2, false);
         opcodes[0xe8] = Opcode::new(Operation::INX, AddressingMode::Implied, 1, 2, false);

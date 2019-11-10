@@ -4,6 +4,11 @@
 kek:
     LDA #$FF
 
+    DEX
+    DEY
+    INX
+    INY
+
     INX
     INX
 
@@ -22,6 +27,13 @@ kek:
     STA ($03,X)
     STA ($05),Y
 
-
+    INC $40
+    INC $40,X
+    INC $210
+    INC $210,X
+    DEC $40
+    DEC $40,X
+    DEC $210
+    DEC $210,X
 
 
