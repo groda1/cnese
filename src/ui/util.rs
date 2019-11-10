@@ -10,7 +10,6 @@ macro_rules! rect (
     )
 );
 
-
 pub fn render_text(canvas: &mut Canvas<Window>,
                    texture_creator: &TextureCreator<WindowContext>,
                    font: &Font,
@@ -22,12 +21,12 @@ pub fn render_text(canvas: &mut Canvas<Window>,
 }
 
 pub fn render_text_small(canvas: &mut Canvas<Window>,
-                   texture_creator: &TextureCreator<WindowContext>,
-                   font: &Font,
-                   x: i32,
-                   y: i32,
-                   text: &str,
-                   color: Color) -> Result<(), String> {
+                         texture_creator: &TextureCreator<WindowContext>,
+                         font: &Font,
+                         x: i32,
+                         y: i32,
+                         text: &str,
+                         color: Color) -> Result<(), String> {
     _render_text(canvas, texture_creator, font, x, y, text, color, 1)
 }
 
@@ -53,14 +52,13 @@ fn _render_text(canvas: &mut Canvas<Window>,
     Ok(())
 }
 
-
 pub fn render_window(canvas: &mut Canvas<Window>,
-                   x: i32,
-                   y: i32,
-                   w: u32,
-                   h: u32,
-                   border_color: Color,
-                    bg_color: Color) -> Result<(), String> {
+                     x: i32,
+                     y: i32,
+                     w: u32,
+                     h: u32,
+                     border_color: Color,
+                     bg_color: Color) -> Result<(), String> {
     let rect = rect!(x,y,w,h);
 
     canvas.set_draw_color(bg_color);

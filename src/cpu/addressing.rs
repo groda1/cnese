@@ -69,7 +69,7 @@ pub enum AddressingMode {
     Accumulator,
     Indirect,
     IndexedIndirectX,
-    IndirectIndexedY
+    IndirectIndexedY,
 }
 
 impl AddressingMode {
@@ -86,7 +86,7 @@ impl AddressingMode {
             AddressingMode::AbsoluteIndexedY => ABSOLUTE_INDEXED_Y,
             AddressingMode::Zeropage => ZEROPAGE,
             AddressingMode::ZeropageIndexedX => ZEROPAGE_INDEXED_X,
-            AddressingMode::ZeropageIndexedY=> ZEROPAGE_INDEXED_Y,
+            AddressingMode::ZeropageIndexedY => ZEROPAGE_INDEXED_Y,
             AddressingMode::Relative => RELATIVE,
             AddressingMode::Accumulator => DO_NOTHING,
             AddressingMode::Indirect => INDIRECT,

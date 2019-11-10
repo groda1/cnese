@@ -11,9 +11,7 @@ use super::super::cpu::state;
 
 use super::util;
 
-use crate::cpu::cpu::Cpu;
 use crate::nes::nes::NES;
-use std::alloc::handle_alloc_error;
 
 static TEXT_COLOR: (u8, u8, u8, u8) = (255, 255, 255, 255);
 static TEXT_COLOR_DARK: (u8, u8, u8, u8) = (175, 175, 175, 175);
@@ -89,7 +87,7 @@ impl<'a> DebugWindow<'a> {
         self.y = y;
     }
 
-    pub fn set_active(&mut self, active : bool) {
+    pub fn set_active(&mut self, active: bool) {
         self.active = active;
     }
 
@@ -142,7 +140,6 @@ impl<'a> RenderableWindow for MemoryWindow {
               x: i32,
               y: i32,
               nes: &NES) -> Result<(), String> {
-
         const TEXT_MEMORY_OFFSET: i32 = 35;
         util::render_window(canvas,
                             x,
@@ -160,12 +157,12 @@ impl<'a> RenderableWindow for MemoryWindow {
             let row = &data[(i * 16)..(i + 1) * 16];
 
             util::render_text_small(canvas,
-                              texture_creator,
-                              font,
-                              x + FRAME_PADDING,
-                              y + FRAME_PADDING + (i as i32 * ROW_OFFSET_SMALL),
-                              format!("{:04X}", self.data_start as usize + (i * 16)).as_str(),
-                              Color::from(TEXT_COLOR_DARK),
+                                    texture_creator,
+                                    font,
+                                    x + FRAME_PADDING,
+                                    y + FRAME_PADDING + (i as i32 * ROW_OFFSET_SMALL),
+                                    format!("{:04X}", self.data_start as usize + (i * 16)).as_str(),
+                                    Color::from(TEXT_COLOR_DARK),
             )?;
 
             let line = format!("{:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X}  {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X}",
@@ -174,12 +171,12 @@ impl<'a> RenderableWindow for MemoryWindow {
             );
 
             util::render_text_small(canvas,
-                              texture_creator,
-                              font,
-                              x + FRAME_PADDING + TEXT_MEMORY_OFFSET,
-                              y + FRAME_PADDING + (i as i32 * ROW_OFFSET_SMALL),
-                              line.as_str(),
-                              Color::from(TEXT_COLOR),
+                                    texture_creator,
+                                    font,
+                                    x + FRAME_PADDING + TEXT_MEMORY_OFFSET,
+                                    y + FRAME_PADDING + (i as i32 * ROW_OFFSET_SMALL),
+                                    line.as_str(),
+                                    Color::from(TEXT_COLOR),
             )?;
 
 

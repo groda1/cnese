@@ -21,7 +21,6 @@ impl Databus {
         let index = address as usize;
 
         &(self.data)[index..index + len]
-
     }
 
     pub fn write(&mut self, address: u16, data: u8) {

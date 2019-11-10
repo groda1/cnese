@@ -21,7 +21,6 @@ impl Cpu {
 
         self.state.offset_pc(instr.get_size() as i8);
         instr.execute(&mut self.state, bus);
-
     }
 
     pub fn get_state(&self) -> &State { &self.state }

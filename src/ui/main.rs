@@ -24,14 +24,12 @@ static BACKGROUND_COLOR: (u8, u8, u8, u8) = (128, 128, 128, 255);
 fn render(canvas: &mut Canvas<Window>,
           windows: &mut Vec<&mut DebugWindow>,
           nes: &NES) -> Result<(), String> {
-
     canvas.set_draw_color(Color::from(BACKGROUND_COLOR));
     canvas.clear();
 
     for window in windows {
         window.render(canvas, nes)?;
     }
-
 
     canvas.present();
 
@@ -105,7 +103,6 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
                 _ => {}
             }
         }
-
     }
 
     Ok(())
