@@ -30,7 +30,7 @@ static INSTRUCTION_WINDOW_WIDTH: u32 = 300;
 
 static REGISTER_WINDOW_WIDTH: u32 = 300;
 
-static MEMORY_WINDOW_WIDTH: u32 = 480;
+static MEMORY_WINDOW_WIDTH: u32 = 440;
 
 pub fn create_instruction_window<'a>(texture_creator: &'a TextureCreator<WindowContext>,
                                      font: &'a Font<'a, 'static>,

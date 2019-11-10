@@ -15,7 +15,7 @@ use super::debug::{DebugWindow, InstructionWindow};
 use crate::nes::nes::NES;
 use crate::cpu::instruction;
 
-static SCREEN_WIDTH: u32 = 1200;
+static SCREEN_WIDTH: u32 = 1250;
 static SCREEN_HEIGHT: u32 = 600;
 
 static BACKGROUND_COLOR: (u8, u8, u8, u8) = (128, 128, 128, 255);
@@ -63,21 +63,31 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
 
     let mut instr_window = debug::create_instruction_window(&texture_creator,
                                                             &font,
-                                                            25,
+                                                            22,
                                                             deassembled_instructions);
-    instr_window.set_pos(20, 20);
+    instr_window.set_pos(20, 130);
     instr_window.set_active(true);
     windows.push(&mut instr_window);
 
     let mut register_window = debug::create_register_window(&texture_creator, &font);
-    register_window.set_pos(350, 20);
+    register_window.set_pos(20, 20);
     register_window.set_active(true);
     windows.push(&mut register_window);
 
     let mut zeropage_window = debug::create_memory_window(&texture_creator, &font, 0, 256, 16);
-    zeropage_window.set_pos(700, 20);
+    zeropage_window.set_pos(330, 20);
     zeropage_window.set_active(true);
     windows.push(&mut zeropage_window);
+
+    let mut stack_window = debug::create_memory_window(&texture_creator, &font, 0x100, 256, 16);
+    stack_window.set_pos(330, 210);
+    stack_window.set_active(true);
+    windows.push(&mut stack_window);
+
+    let mut ram_window = debug::create_memory_window(&texture_creator, &font, 0x200, 0x600, 48);
+    ram_window.set_pos(780, 20);
+    ram_window.set_active(true);
+    windows.push(&mut ram_window);
 
 
     render(&mut canvas, &mut windows, nes)?;
