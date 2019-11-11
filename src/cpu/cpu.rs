@@ -16,7 +16,7 @@ impl Cpu {
     pub fn tick(&mut self, bus: &mut Databus) {
 
         // TODO FIX SIZING
-        let next_instruction_binary = bus.read_slize(self.state.get_pc(), 3);
+        let next_instruction_binary = bus.read_slice(self.state.get_pc(), 3);
         let instr = instruction::parse_instruction(next_instruction_binary);
 
         self.state.offset_pc(instr.get_size() as i8);

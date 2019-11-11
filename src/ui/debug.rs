@@ -151,7 +151,7 @@ impl<'a> RenderableWindow for MemoryWindow {
         )?;
 
         let mut i = 0;
-        let data = nes.get_databus().read_slize(self.data_start, self.data_size);
+        let data = nes.get_databus().read_slice(self.data_start, self.data_size);
 
         while i < self.height && (i + 1) * 16 <= self.data_size {
             let row = &data[(i * 16)..(i + 1) * 16];

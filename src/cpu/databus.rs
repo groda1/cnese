@@ -17,7 +17,7 @@ impl Databus {
         self.data[address as usize]
     }
 
-    pub fn read_slize(&self, address: u16, len: usize) -> &[u8] {
+    pub fn read_slice(&self, address: u16, len: usize) -> &[u8] {
         let index = address as usize;
 
         &(self.data)[index..index + len]
