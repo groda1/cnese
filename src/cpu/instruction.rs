@@ -2,6 +2,7 @@ use super::databus::Databus;
 use super::state::State;
 use super::state;
 use super::addressing::AddressingMode;
+use crate::cpu::state::{SR_MASK_NEGATIVE, SR_MASK_OVERFLOW, SR_MASK_ZERO};
 
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy)]
@@ -10,6 +11,16 @@ enum Operation {
     AND,
     ASL_A,
     ASL_M,
+    BCC,
+    BCS,
+    BEQ,
+    BIT,
+    BMI,
+    BNE,
+    BPL,
+    BRK,
+    BVC,
+    BVS,
     CLC,
     CLD,
     CLI,
@@ -41,6 +52,16 @@ impl Operation {
             Operation::AND => "AND",
             Operation::ASL_A => "ASL",
             Operation::ASL_M => "ASL",
+            Operation::BCC => "BCC",
+            Operation::BCS => "BCS",
+            Operation::BEQ => "BEQ",
+            Operation::BIT => "BIT",
+            Operation::BMI => "BMI",
+            Operation::BNE => "BNE",
+            Operation::BPL => "BPL",
+            Operation::BRK => "BRK",
+            Operation::BVC => "BVC",
+            Operation::BVS => "BVS",
             Operation::CLC => "CLC",
             Operation::CLD => "CLD",
             Operation::CLI => "CLI",
@@ -71,6 +92,16 @@ impl Operation {
             Operation::AND => AND,
             Operation::ASL_A => ASL_A,
             Operation::ASL_M => ASL_M,
+            Operation::BCC => BCC,
+            Operation::BCS => BCS,
+            Operation::BEQ => BEQ,
+            Operation::BIT => BIT,
+            Operation::BMI  => BMI,
+            Operation::BNE  => BNE,
+            Operation::BPL  => BPL,
+            Operation::BRK  => BRK,
+            Operation::BVC  => BVC,
+            Operation::BVS  => BVS,
             Operation::CLC => CLC,
             Operation::CLD => CLD,
             Operation::CLI => CLI,
@@ -132,6 +163,74 @@ const ASL_M: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| 
     state.set_status(state::SR_MASK_NEGATIVE, value >= 128);
     state.set_status(state::SR_MASK_ZERO, value == 0);
 };
+
+const BCC: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+    if !state.get_status(state::SR_MASK_CARRY) {
+        state.set_next_pc(operand);
+    }
+    // TODO BRANCH CYCLE PENALTY
+};
+
+const BCS: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+    if state.get_status(state::SR_MASK_CARRY) {
+        state.set_next_pc(operand);
+    }
+    // TODO BRANCH CYCLE PENALTY
+};
+
+const BEQ: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+    if state.get_status(state::SR_MASK_ZERO) {
+        state.set_next_pc(operand);
+    }
+    // TODO BRANCH CYCLE PENALTY
+};
+
+const BIT: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+    let op = operand as u8;
+    state.set_status(SR_MASK_NEGATIVE, (op & SR_MASK_NEGATIVE) > 0);
+    state.set_status(SR_MASK_OVERFLOW, (op & SR_MASK_OVERFLOW) > 0);
+    state.set_status(SR_MASK_ZERO, (op & state.acc) > 0);
+};
+
+const BMI: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+    if state.get_status(state::SR_MASK_NEGATIVE) {
+        state.set_next_pc(operand);
+    }
+    // TODO BRANCH CYCLE PENALTY
+};
+
+const BNE: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+    if !state.get_status(state::SR_MASK_ZERO) {
+        state.set_next_pc(operand);
+    }
+    // TODO BRANCH CYCLE PENALTY
+};
+
+const BPL: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+    if !state.get_status(state::SR_MASK_NEGATIVE) {
+        state.set_next_pc(operand);
+    }
+    // TODO BRANCH CYCLE PENALTY
+};
+
+const BRK: OperationFn = |_state: &mut State, _bus: &mut Databus, _operand: u16| {
+    unimplemented!();
+};
+
+const BVC: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+    if !state.get_status(state::SR_MASK_OVERFLOW) {
+        state.set_next_pc(operand);
+    }
+    // TODO BRANCH CYCLE PENALTY
+};
+
+const BVS: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+    if state.get_status(state::SR_MASK_OVERFLOW) {
+        state.set_next_pc(operand);
+    }
+    // TODO BRANCH CYCLE PENALTY
+};
+
 
 const SBC: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     adc(state, !(operand as u8));
@@ -281,6 +380,21 @@ lazy_static! {
         opcodes[0x16] = Opcode::new(Operation::ASL_M, AddressingMode::ZeropageIndexedX, 2, 6, false);
         opcodes[0x0e] = Opcode::new(Operation::ASL_M, AddressingMode::Absolute, 3, 6, false);
         opcodes[0x1e] = Opcode::new(Operation::ASL_M, AddressingMode::AbsoluteIndexedX, 3, 7, false);
+
+        opcodes[0x90] = Opcode::new(Operation::BCC, AddressingMode::Relative, 2, 2, true);
+        opcodes[0xb0] = Opcode::new(Operation::BCS, AddressingMode::Relative, 2, 2, true);
+        opcodes[0xf0] = Opcode::new(Operation::BEQ, AddressingMode::Relative, 2, 2, true);
+
+        opcodes[0x24] = Opcode::new(Operation::BIT, AddressingMode::Zeropage, 2, 3, false);
+        opcodes[0x2c] = Opcode::new(Operation::BIT, AddressingMode::Absolute, 3, 4, false);
+
+        opcodes[0x30] = Opcode::new(Operation::BMI, AddressingMode::Relative, 2, 2, true);
+        opcodes[0xd0] = Opcode::new(Operation::BNE, AddressingMode::Relative, 2, 2, true);
+        opcodes[0x10] = Opcode::new(Operation::BPL, AddressingMode::Relative, 2, 2, true);
+        opcodes[0x50] = Opcode::new(Operation::BVC, AddressingMode::Relative, 2, 2, true);
+        opcodes[0x70] = Opcode::new(Operation::BVS, AddressingMode::Relative, 2, 2, true);
+
+        opcodes[0x00] = Opcode::new(Operation::BRK, AddressingMode::Implied, 1, 7, false);
 
         opcodes[0x18] = Opcode::new(Operation::CLC, AddressingMode::Implied, 1, 2, false);
         opcodes[0xd8] = Opcode::new(Operation::CLD, AddressingMode::Implied, 1, 2, false);

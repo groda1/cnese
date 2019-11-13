@@ -35,15 +35,16 @@ impl State {
             cycles: 0,
         };
         state.program_counter = PC_START;
+        state.next_pc = PC_START;
 
         state
     }
 
-    pub fn offset_next_pc(&mut self, offset: i8) {
+    pub fn calculate_relative_pc(&self, offset: i8) -> u16 {
         if offset < 0 {
-            self.next_pc = self.program_counter - (-offset) as u16;
+            self.next_pc - (-offset) as u16
         } else {
-            self.next_pc = self.program_counter + offset as u16;
+            self.next_pc + offset as u16
         }
     }
 

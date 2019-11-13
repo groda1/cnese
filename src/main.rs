@@ -2,9 +2,6 @@
 extern crate lazy_static;
 
 mod cpu;
-use cpu::cpu::Cpu;
-use cpu::databus::Databus;
-use cpu::instruction;
 
 mod nes;
 use nes::nes::NES;

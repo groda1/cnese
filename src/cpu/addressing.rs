@@ -5,7 +5,11 @@ pub type AddressingModeFn = fn(state: &State, bus: &Databus, operand: u16) -> u1
 
 pub const DO_NOTHING: AddressingModeFn = |_state: &State, _bus: &Databus, _operand: u16| -> u16 { 0 };
 pub const IMMEDIATE: AddressingModeFn = |_state: &State, _bus: &Databus, operand: u16| -> u16 { operand };
-pub const RELATIVE: AddressingModeFn = |_state: &State, _bus: &Databus, operand: u16| -> u16 { operand };
+
+pub const RELATIVE: AddressingModeFn = |state: &State, _bus: &Databus, operand: u16| -> u16 {
+    state.calculate_relative_pc(operand as i8)
+};
+
 pub const ABSOLUTE: AddressingModeFn = |_state: &State, _bus: &Databus, operand: u16| -> u16 { operand };
 pub const ABSOLUTE_INDEXED_X: AddressingModeFn = |state: &State, _bus: &Databus, operand: u16| -> u16 {
     // TODO check for page boundary
@@ -106,7 +110,7 @@ impl AddressingMode {
             AddressingMode::Zeropage => format!("${:02X}", operand),
             AddressingMode::ZeropageIndexedX => format!("${:02X},X", operand),
             AddressingMode::ZeropageIndexedY => format!("${:02X},Y", operand),
-            AddressingMode::Relative => format! {"${:02X}", operand},
+            AddressingMode::Relative => format! ("${:02X}", operand as i8),
             AddressingMode::Accumulator => format! {"A"},
             AddressingMode::Indirect => format! {"(${:04X})", operand},
             AddressingMode::IndexedIndirectX => format! {"(${:02X},X)", operand},

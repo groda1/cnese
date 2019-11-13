@@ -10,7 +10,7 @@ use sdl2::video::Window;
 use sdl2::pixels::Color;
 
 use super::debug;
-use super::debug::{DebugWindow, InstructionWindow};
+use super::debug::{DebugWindow};
 
 use crate::nes::nes::NES;
 use crate::cpu::instruction;

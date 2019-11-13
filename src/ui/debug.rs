@@ -6,7 +6,6 @@ use sdl2::pixels::Color;
 
 use super::super::cpu::instruction::Instruction;
 use super::super::cpu::databus;
-use super::super::cpu::state::State;
 use super::super::cpu::state;
 
 use super::util;
