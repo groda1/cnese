@@ -2,7 +2,6 @@ use super::databus::Databus;
 use super::state::State;
 use super::state;
 use super::addressing::AddressingMode;
-use crate::cpu::state::{SR_MASK_NEGATIVE, SR_MASK_OVERFLOW, SR_MASK_ZERO};
 
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy)]
@@ -187,9 +186,9 @@ const BEQ: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
 
 const BIT: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     let op = operand as u8;
-    state.set_status(SR_MASK_NEGATIVE, (op & SR_MASK_NEGATIVE) > 0);
-    state.set_status(SR_MASK_OVERFLOW, (op & SR_MASK_OVERFLOW) > 0);
-    state.set_status(SR_MASK_ZERO, (op & state.acc) > 0);
+    state.set_status(state::SR_MASK_NEGATIVE, (op & state::SR_MASK_NEGATIVE) > 0);
+    state.set_status(state::SR_MASK_OVERFLOW, (op & state::SR_MASK_OVERFLOW) > 0);
+    state.set_status(state::SR_MASK_ZERO, (op & state.acc) > 0);
 };
 
 const BMI: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
