@@ -198,7 +198,7 @@ const INY: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| 
 };
 
 const JMP: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
-    state.set_pc(operand);
+    state.set_next_pc(operand);
 };
 
 const LDA: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {

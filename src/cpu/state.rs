@@ -14,6 +14,8 @@ pub struct State {
     pub y: u8,
 
     program_counter: u16,
+    next_pc: u16,
+
     stack_pointer: u8,
     status: u8,
 
@@ -27,26 +29,32 @@ impl State {
             x: 0,
             y: 0,
             program_counter: 0,
+            next_pc: 0,
             stack_pointer: 0,
             status: 0,
             cycles: 0,
         };
-
         state.program_counter = PC_START;
+
         state
     }
 
-    pub fn offset_pc(&mut self, offset: i8) {
+    pub fn offset_next_pc(&mut self, offset: i8) {
         if offset < 0 {
-            self.program_counter -= (-offset) as u16;
+            self.next_pc = self.program_counter - (-offset) as u16;
         } else {
-            self.program_counter += offset as u16;
+            self.next_pc = self.program_counter + offset as u16;
         }
     }
 
-    pub fn set_pc(&mut self, pc: u16) {
-        self.program_counter = pc;
+    pub fn set_next_pc(&mut self, pc: u16) {
+        self.next_pc = pc;
     }
+
+    pub fn update_pc(&mut self) {
+        self.program_counter = self.next_pc;
+    }
+
     pub fn get_pc(&self) -> u16 {
         self.program_counter
     }
@@ -77,10 +85,15 @@ mod tests {
     fn test_offset_pc() {
         let mut state = State::new();
 
-        state.offset_pc(100);
+        state.set_next_pc(0);
+        state.update_pc();
+
+        state.offset_next_pc(100);
+        state.update_pc();
         assert_eq!(100, state.program_counter);
 
-        state.offset_pc(-50);
+        state.offset_next_pc(-50);
+        state.update_pc();
         assert_eq!(50, state.program_counter);
     }
 
