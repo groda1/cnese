@@ -26,7 +26,7 @@ impl NES {
         &self.cpu
     }
 
-    pub fn load_rom(&mut self, rom_data: Vec<u8>) {
+    pub fn load_rom(&mut self, rom_data: &[u8]) {
         self.databus.load_rom(rom_data);
     }
 }

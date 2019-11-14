@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use sdl2::render::{TextureCreator, Canvas};
 use sdl2::video::{WindowContext, Window};
-use sdl2::ttf::Font;
 use sdl2::pixels::Color;
 
 use super::super::cpu::instruction::Instruction;
@@ -9,11 +8,10 @@ use super::super::cpu::databus;
 use super::super::cpu::state;
 
 use super::util;
+use super::font::Font;
 
 use crate::nes::nes::NES;
 
-static TEXT_COLOR: (u8, u8, u8, u8) = (255, 255, 255, 255);
-static TEXT_COLOR_DARK: (u8, u8, u8, u8) = (175, 175, 175, 175);
 
 static FRAME_BORDER_COLOR: (u8, u8, u8, u8) = (255, 255, 255, 255);
 static FRAME_BACKGROUND_COLOR: (u8, u8, u8, u8) = (64, 64, 64, 255);
@@ -29,36 +27,35 @@ static REGISTER_WINDOW_WIDTH: u32 = 300;
 
 static MEMORY_WINDOW_WIDTH: u32 = 440;
 
-pub fn create_instruction_window<'a>(texture_creator: &'a TextureCreator<WindowContext>,
-                                     font: &'a Font<'a, 'static>,
+pub fn create_instruction_window<'a>(font: &'a Font<'a>,
+                                     secondary_font: &'a Font<'a>,
                                      height: usize,
                                      instructions: Vec<Instruction>) -> DebugWindow<'a> {
     let instruction_window = InstructionWindow::new(instructions, height);
 
-    DebugWindow::new(texture_creator, font, Box::new(instruction_window))
+    DebugWindow::new(font, secondary_font, Box::new(instruction_window))
 }
 
-pub fn create_register_window<'a>(texture_creator: &'a TextureCreator<WindowContext>,
-                                  font: &'a Font<'a, 'static>) -> DebugWindow<'a> {
+pub fn create_register_window<'a>(font: &'a Font<'a>, secondary_font: &'a Font<'a>) -> DebugWindow<'a> {
     let register_window = RegisterWindow {};
 
-    DebugWindow::new(texture_creator, font, Box::new(register_window))
+    DebugWindow::new(font, secondary_font, Box::new(register_window))
 }
 
-pub fn create_memory_window<'a>(texture_creator: &'a TextureCreator<WindowContext>,
-                                font: &'a Font<'a, 'static>,
+pub fn create_memory_window<'a>(font: &'a Font<'a>,
+                                secondary_font: &'a Font<'a>,
                                 data_start: u16,
                                 data_size: usize,
                                 height: usize) -> DebugWindow<'a> {
     let memory_window = MemoryWindow::new(data_start, data_size, height);
 
-    DebugWindow::new(texture_creator, font, Box::new(memory_window))
+    DebugWindow::new(font, secondary_font, Box::new(memory_window))
 }
 
 
 pub struct DebugWindow<'a> {
-    texture_creator: &'a TextureCreator<WindowContext>,
-    font: &'a Font<'a, 'static>,
+    font: &'a Font<'a>,
+    secondary_font: &'a Font<'a>,
     x: i32,
     y: i32,
     active: bool,
@@ -66,12 +63,12 @@ pub struct DebugWindow<'a> {
 }
 
 impl<'a> DebugWindow<'a> {
-    fn new(texture_creator: &'a TextureCreator<WindowContext>,
-           font: &'a Font<'a, 'static>,
+    fn new(font: &'a Font<'a>,
+           secondary_font: &'a Font<'a>,
            renderable_window: Box<dyn RenderableWindow>) -> DebugWindow<'a> {
         let window = DebugWindow {
-            texture_creator,
             font,
+            secondary_font,
             x: 0,
             y: 0,
             active: false,
@@ -92,7 +89,7 @@ impl<'a> DebugWindow<'a> {
 
     pub fn render(&mut self, canvas: &mut Canvas<Window>, nes: &NES) -> Result<(), String> {
         if self.active {
-            self.renderable_window.render(canvas, self.texture_creator, self.font, self.x, self.y, nes)?;
+            self.renderable_window.render(canvas, self.font, self.secondary_font, self.x, self.y, nes)?;
         }
         Ok(())
     }
@@ -101,8 +98,8 @@ impl<'a> DebugWindow<'a> {
 trait RenderableWindow {
     fn render(&mut self,
               canvas: &mut Canvas<Window>,
-              texture_creator: &TextureCreator<WindowContext>,
               font: &Font,
+              secondary_font: &Font,
               x: i32,
               y: i32,
               nes: &NES) -> Result<(), String>;
@@ -134,8 +131,8 @@ impl MemoryWindow {
 impl<'a> RenderableWindow for MemoryWindow {
     fn render(&mut self,
               canvas: &mut Canvas<Window>,
-              texture_creator: &TextureCreator<WindowContext>,
               font: &Font,
+              secondary_font: &Font,
               x: i32,
               y: i32,
               nes: &NES) -> Result<(), String> {
@@ -156,12 +153,10 @@ impl<'a> RenderableWindow for MemoryWindow {
             let row = &data[(i * 16)..(i + 1) * 16];
 
             util::render_text_small(canvas,
-                                    texture_creator,
-                                    font,
+                                    secondary_font,
                                     x + FRAME_PADDING,
                                     y + FRAME_PADDING + (i as i32 * ROW_OFFSET_SMALL),
                                     format!("{:04X}", self.data_start as usize + (i * 16)).as_str(),
-                                    Color::from(TEXT_COLOR_DARK),
             )?;
 
             let line = format!("{:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X}  {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X}",
@@ -170,12 +165,10 @@ impl<'a> RenderableWindow for MemoryWindow {
             );
 
             util::render_text_small(canvas,
-                                    texture_creator,
                                     font,
                                     x + FRAME_PADDING + TEXT_MEMORY_OFFSET,
                                     y + FRAME_PADDING + (i as i32 * ROW_OFFSET_SMALL),
                                     line.as_str(),
-                                    Color::from(TEXT_COLOR),
             )?;
 
 
@@ -192,8 +185,8 @@ pub struct RegisterWindow {}
 impl<'a> RenderableWindow for RegisterWindow {
     fn render(&mut self,
               canvas: &mut Canvas<Window>,
-              texture_creator: &TextureCreator<WindowContext>,
               font: &Font,
+              secondary_font: &Font,
               x: i32,
               y: i32,
               nes: &NES) -> Result<(), String> {
@@ -212,94 +205,72 @@ impl<'a> RenderableWindow for RegisterWindow {
         )?;
 
         util::render_text(canvas,
-                          texture_creator,
                           font,
                           x + FRAME_PADDING,
                           y + FRAME_PADDING,
                           "A:    X:    Y:",
-                          Color::from(TEXT_COLOR),
         )?;
         util::render_text(canvas,
-                          texture_creator,
-                          font,
+                          secondary_font,
                           x + FRAME_PADDING,
                           y + FRAME_PADDING,
                           format!("  ${:02X}   ${:02X}   ${:02X}", state.acc, state.x, state.y).as_str(),
-                          Color::from(TEXT_COLOR_DARK),
         )?;
 
         util::render_text(canvas,
-                          texture_creator,
                           font,
                           x + FRAME_PADDING,
                           y + FRAME_PADDING + ROW_OFFSET + EXTRA_ROW_OFFSET,
                           "PC:      SP:",
-                          Color::from(TEXT_COLOR),
         )?;
         util::render_text(canvas,
-                          texture_creator,
-                          font,
+                          secondary_font,
                           x + FRAME_PADDING,
                           y + FRAME_PADDING + ROW_OFFSET + EXTRA_ROW_OFFSET,
                           format!("   ${:04X}    ${:02X}", state.get_pc(), state.get_sp()).as_str(),
-                          Color::from(TEXT_COLOR_DARK),
+        )?;
+
+
+        util::render_text(canvas,
+                          if state.get_status(state::SR_MASK_NEGATIVE) { font } else { secondary_font },
+                          x + FRAME_PADDING,
+                          y + FRAME_PADDING + ROW_OFFSET * 3,
+                          "N",
         )?;
 
         util::render_text(canvas,
-                          texture_creator,
-                          font,
-                          x + FRAME_PADDING,
-                          y + FRAME_PADDING + ROW_OFFSET * 3,
-                          "N",
-                          if state.get_status(state::SR_MASK_NEGATIVE) { Color::from(TEXT_COLOR) } else { Color::from(TEXT_COLOR_DARK) },
-        )?;
-        util::render_text(canvas,
-                          texture_creator,
-                          font,
-                          x + FRAME_PADDING,
-                          y + FRAME_PADDING + ROW_OFFSET * 3,
-                          "N",
-                          if state.get_status(state::SR_MASK_NEGATIVE) { Color::from(TEXT_COLOR) } else { Color::from(TEXT_COLOR_DARK) },
-        )?;
-        util::render_text(canvas,
-                          texture_creator,
-                          font,
+                          if state.get_status(state::SR_MASK_OVERFLOW) { font } else { secondary_font },
                           x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 1),
                           y + FRAME_PADDING + ROW_OFFSET * 3,
                           "V",
-                          if state.get_status(state::SR_MASK_OVERFLOW) { Color::from(TEXT_COLOR) } else { Color::from(TEXT_COLOR_DARK) },
         )?;
+
         util::render_text(canvas,
-                          texture_creator,
-                          font,
+                          if state.get_status(state::SR_MASK_DECIMAL) { font } else { secondary_font },
                           x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 4),
                           y + FRAME_PADDING + ROW_OFFSET * 3,
                           "D",
-                          if state.get_status(state::SR_MASK_DECIMAL) { Color::from(TEXT_COLOR) } else { Color::from(TEXT_COLOR_DARK) },
         )?;
+
         util::render_text(canvas,
-                          texture_creator,
-                          font,
+                          if state.get_status(state::SR_MASK_INTERRUPT) { font } else { secondary_font },
                           x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 5),
                           y + FRAME_PADDING + ROW_OFFSET * 3,
                           "I",
-                          if state.get_status(state::SR_MASK_INTERRUPT) { Color::from(TEXT_COLOR) } else { Color::from(TEXT_COLOR_DARK) },
         )?;
+
         util::render_text(canvas,
-                          texture_creator,
-                          font,
+                          if state.get_status(state::SR_MASK_ZERO) { font } else { secondary_font },
                           x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 6),
                           y + FRAME_PADDING + ROW_OFFSET * 3,
                           "Z",
-                          if state.get_status(state::SR_MASK_ZERO) { Color::from(TEXT_COLOR) } else { Color::from(TEXT_COLOR_DARK) },
         )?;
+
         util::render_text(canvas,
-                          texture_creator,
-                          font,
+                          if state.get_status(state::SR_MASK_CARRY) { font } else { secondary_font },
                           x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 7),
                           y + FRAME_PADDING + ROW_OFFSET * 3,
                           "C",
-                          if state.get_status(state::SR_MASK_CARRY) { Color::from(TEXT_COLOR) } else { Color::from(TEXT_COLOR_DARK) },
         )?;
 
         Ok(())
@@ -365,8 +336,8 @@ impl InstructionWindow {
 impl<'a> RenderableWindow for InstructionWindow {
     fn render(&mut self,
               canvas: &mut Canvas<Window>,
-              texture_creator: &TextureCreator<WindowContext>,
               font: &Font,
+              secondary_font: &Font,
               x: i32,
               y: i32,
               nes: &NES) -> Result<(), String> {
@@ -387,36 +358,29 @@ impl<'a> RenderableWindow for InstructionWindow {
         let mut memory_addr = self.instruction_rom_offset;
 
         for i in 0..self.height {
-
-            //for i in (0 + self.instruction_offset)..(INSTRUCTION_WINDOW_HEIGHT + self.instruction_offset) {
             let instruction = self.instructions[i + self.instruction_offset];
 
             if pc == memory_addr {
                 util::render_text(canvas,
-                                  texture_creator,
                                   font,
                                   x + FRAME_PADDING,
                                   y + i as i32 * ROW_OFFSET + FRAME_PADDING,
                                   ">",
-                                  Color::from(TEXT_COLOR),
                 )?;
             }
 
             util::render_text(canvas,
-                              texture_creator,
-                              font,
+                              secondary_font,
                               x + TEXT_ADDR_OFFSET + FRAME_PADDING,
                               y + i as i32 * ROW_OFFSET + FRAME_PADDING,
                               format!("{:04X}", memory_addr).as_str(),
-                              Color::from(TEXT_COLOR_DARK),
             )?;
 
             util::render_text(canvas,
-                              texture_creator,
                               font,
                               x + TEXT_INSTRUCTION_OFFSET + FRAME_PADDING,
                               y + i as i32 * ROW_OFFSET + FRAME_PADDING,
-                              instruction.format().as_str(), Color::from(TEXT_COLOR),
+                              instruction.format().as_str(),
             )?;
 
             memory_addr += instruction.get_size() as usize;

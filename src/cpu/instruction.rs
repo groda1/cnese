@@ -354,7 +354,7 @@ fn adc(state: &mut State, operand: u8) {
 lazy_static! {
     static ref OPCODE_SET: Vec <Opcode> = {
         let unknown = Opcode::new(Operation::UNKNOWN, AddressingMode::Unknown, 1, 0, false);
-        let mut opcodes = vec ! [unknown; 256];
+        let mut opcodes = vec![unknown; 256];
 
         opcodes[0x69] = Opcode::new(Operation::ADC, AddressingMode::Immediate, 2, 2, false);
         opcodes[0x65] = Opcode::new(Operation::ADC, AddressingMode::Zeropage, 2, 3, false);
@@ -511,7 +511,7 @@ impl Instruction {
     }
 }
 
-pub fn parse_instruction(prg: &[u8]) -> Instruction {
+pub fn decode_instruction(prg: &[u8]) -> Instruction {
     let opcode = OPCODE_SET[prg[0] as usize];
 
     let mut operand = 0;

@@ -1,8 +1,8 @@
-use sdl2::render::{Canvas, TextureCreator, TextureQuery};
+use sdl2::render::{Canvas, TextureCreator, TextureQuery, Texture};
 use sdl2::video::{Window, WindowContext};
-use sdl2::ttf::Font;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
+use crate::ui::font::Font;
 
 macro_rules! rect (
     ($x:expr, $y:expr, $w:expr, $h:expr) => (
@@ -11,46 +11,62 @@ macro_rules! rect (
 );
 
 pub fn render_text(canvas: &mut Canvas<Window>,
-                   texture_creator: &TextureCreator<WindowContext>,
                    font: &Font,
                    x: i32,
                    y: i32,
-                   text: &str,
-                   color: Color) -> Result<(), String> {
-    _render_text(canvas, texture_creator, font, x, y, text, color, 2)
+                   text: &str) -> Result<(), String> {
+    _render_text(canvas, font, x, y, text, 2)?;
+
+    Ok(())
 }
 
 pub fn render_text_small(canvas: &mut Canvas<Window>,
-                         texture_creator: &TextureCreator<WindowContext>,
                          font: &Font,
                          x: i32,
                          y: i32,
-                         text: &str,
-                         color: Color) -> Result<(), String> {
-    _render_text(canvas, texture_creator, font, x, y, text, color, 1)
+                         text: &str) -> Result<(), String> {
+    _render_text(canvas, font, x, y, text, 1)?;
+
+    Ok(())
 }
 
 fn _render_text(canvas: &mut Canvas<Window>,
-                texture_creator: &TextureCreator<WindowContext>,
                 font: &Font,
                 x: i32,
                 y: i32,
                 text: &str,
-                color: Color,
                 scale: u32) -> Result<(), String> {
-    let surface = font.render(text).
-        blended(color).map_err(|e| e.to_string())?;
-    let texture = texture_creator.create_texture_from_surface(&surface)
-        .map_err(|e| e.to_string())?;
+    let mut x_off = 0;
+    for character in text.chars() {
+        _render_textured_rect(canvas,
+                              font.get_character_texture(character),
+                              x + x_off, y,
+                              font.get_width() * scale,
+                              font.get_height() * scale)?;
 
-    let TextureQuery { width, height, .. } = texture.query();
+        x_off += (font.get_width() * scale) as i32;
+    }
 
-    let target = rect!(x,y, width * scale, height * scale);
+    Ok(())
+}
 
+fn _render_textured_rect(canvas: &mut Canvas<Window>,
+                         texture: &Texture,
+                         x: i32,
+                         y: i32,
+                         w: u32,
+                         h: u32) -> Result<(), String> {
+    let target = rect!(x, y, w, h);
+
+    //texture.set_color_mod(color.r, color.g, color.b);
+
+
+    //canvas.fill_rect(target)?;
     canvas.copy(&texture, None, Some(target))?;
 
     Ok(())
 }
+
 
 pub fn render_window(canvas: &mut Canvas<Window>,
                      x: i32,

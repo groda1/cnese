@@ -16,7 +16,7 @@ fn main() {
     let rom = util::file::read_file(path);
 
     let mut nes = NES::new();
-    nes.load_rom(rom);
+    nes.load_rom(rom.as_slice());
 
     let _result = ui::main::run(&mut nes).unwrap();
 }
