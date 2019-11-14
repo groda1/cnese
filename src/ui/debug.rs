@@ -12,7 +12,6 @@ use super::font::Font;
 
 use crate::nes::nes::NES;
 
-
 static FRAME_BORDER_COLOR: (u8, u8, u8, u8) = (255, 255, 255, 255);
 static FRAME_BACKGROUND_COLOR: (u8, u8, u8, u8) = (64, 64, 64, 255);
 
@@ -52,6 +51,12 @@ pub fn create_memory_window<'a>(font: &'a Font<'a>,
     DebugWindow::new(font, secondary_font, Box::new(memory_window))
 }
 
+pub fn create_framerate_window<'a>(font: &'a Font<'a>,
+                                   secondary_font: &'a Font<'a>)-> DebugWindow<'a> {
+
+    let counter = FramerateCounter::new();
+    DebugWindow::new(font, secondary_font, Box::new(counter))
+}
 
 pub struct DebugWindow<'a> {
     font: &'a Font<'a>,
@@ -103,6 +108,30 @@ trait RenderableWindow {
               x: i32,
               y: i32,
               nes: &NES) -> Result<(), String>;
+}
+
+pub struct FramerateCounter {}
+
+impl FramerateCounter {
+    pub fn new() -> FramerateCounter {
+        FramerateCounter { }
+    }
+}
+
+impl<'a> RenderableWindow for FramerateCounter {
+    fn render(&mut self,
+              canvas: &mut Canvas<Window>,
+              font: &Font,
+              secondary_font: &Font,
+              x: i32,
+              y: i32,
+              nes: &NES) -> Result<(), String> {
+        util::render_text_small(canvas, font, x, y,
+                                format!("FPS: {}", nes.get_frames_dropped()).as_str(),
+        )?;
+
+        Ok(())
+    }
 }
 
 pub struct MemoryWindow {

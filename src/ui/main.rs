@@ -15,9 +15,13 @@ use super::debug::DebugWindow;
 use crate::nes::nes::NES;
 use crate::cpu::instruction;
 use crate::ui::font::Font;
+use std::time::Duration;
 
 static SCREEN_WIDTH: u32 = 1250;
 static SCREEN_HEIGHT: u32 = 600;
+
+static FRAMERATE: u32 = 60;
+static FRAMETIME_NANO: u64 = 1_000_000_000 / FRAMERATE as u64;
 
 static BACKGROUND_COLOR: (u8, u8, u8, u8) = (128, 128, 128, 255);
 static TEXT_COLOR: (u8, u8, u8, u8) = (255, 255, 255, 255);
@@ -32,6 +36,8 @@ fn render(canvas: &mut Canvas<Window>,
     for window in windows {
         window.render(canvas, nes)?;
     }
+
+
     canvas.present();
 
     Ok(())
@@ -87,11 +93,17 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
     ram_window.set_active(true);
     windows.push(&mut ram_window);
 
+    let mut framerate_counter = debug::create_framerate_window(&font, &dark_font);
+    framerate_counter.set_pos(5, 5);
+    framerate_counter.set_active(true);
+    windows.push(&mut framerate_counter);
+
     let mut event_pump = sdl_context.event_pump()?;
     let mut timer = sdl_context.timer()?;
+    let mut framerate = FRAMERATE;
 
     'mainloop: loop {
-        let time = timer.ticks();
+        let time = timer.performance_counter();
 
         for event in event_pump.poll_iter() {
             match event {
@@ -100,16 +112,21 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
                 Event::KeyDown { keycode: Some(Keycode::Space), .. } => {
                     nes.tick();
 
-                    //render(&mut canvas, &mut windows, nes)?;
                 }
                 _ => {}
             }
         }
 
+        nes.set_framerate(framerate);
         render(&mut canvas, &mut windows, nes)?;
 
-        let delta = timer.ticks() - time;
-        println!("{} ", delta);
+        let sleep_time_nano: i64 = FRAMETIME_NANO as i64 - (timer.performance_counter() - time) as i64;
+        if sleep_time_nano < 0 {
+            framerate  = 1_000_000_000/ (-sleep_time_nano + FRAMETIME_NANO as i64) as u32;
+        } else {
+            framerate = FRAMERATE;
+            std::thread::sleep(Duration::from_nanos(sleep_time_nano as u64));
+        }
     }
 
     Ok(())
