@@ -6,7 +6,7 @@ pub struct NES {
     databus: Databus,
 
 
-    _framerate: u32
+    _actual_framerate: u32
 }
 
 
@@ -15,7 +15,7 @@ impl NES {
         NES {
             cpu: Cpu::new(),
             databus: Databus::new(),
-            _framerate: 0
+            _actual_framerate: 0
         }
     }
 
@@ -31,13 +31,19 @@ impl NES {
         &self.cpu
     }
 
+    pub fn reset(&mut self) {
+        self.cpu.reset(&self.databus);
+    }
+
     pub fn load_rom(&mut self, rom_data: &[u8]) {
         self.databus.load_rom(rom_data);
     }
 
-    pub fn get_frames_dropped(&self) -> u32 { self._framerate }
 
-    pub fn set_framerate(&mut self, frames_dropped: u32) {
-        self._framerate = frames_dropped
+
+    pub fn get_actual_framerate(&self) -> u32 { self._actual_framerate }
+
+    pub fn set_actual_framerate(&mut self, frames_dropped: u32) {
+        self._actual_framerate = frames_dropped
     }
 }

@@ -6,7 +6,7 @@ use std::str::Chars;
 use sdl2::pixels::Color;
 
 
-const CHARACTERS: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890!()$:><# ";
+const CHARACTERS: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890!()$:><#, ";
 
 pub struct Font<'a> {
     character_map: Vec<Texture<'a>>,
@@ -20,7 +20,7 @@ impl<'a> Font<'a> {
                color: Color) -> Font<'a> {
         let mut character_map = Vec::new();
 
-        for i in 0..255 {
+        for _i in 0..255 {
             let texture = build_character_texture(texture_creator, font, '-', color);
             character_map.push(texture);
         }

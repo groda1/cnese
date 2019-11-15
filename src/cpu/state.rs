@@ -6,7 +6,7 @@ pub const SR_MASK_INTERRUPT: u8 = 1 << 2;
 pub const SR_MASK_ZERO: u8 = 1 << 1;
 pub const SR_MASK_CARRY: u8 = 1 << 0;
 
-const PC_START: u16 = 0x4020;
+const DEFAULT_STATUS: u8 = 0;
 
 pub struct State {
     pub acc: u8,
@@ -18,26 +18,32 @@ pub struct State {
 
     stack_pointer: u8,
     status: u8,
-
-    cycles: u64,
 }
 
 impl State {
     pub fn new() -> State {
-        let mut state = State {
+        let state = State {
             acc: 0,
             x: 0,
             y: 0,
             program_counter: 0,
             next_pc: 0,
             stack_pointer: 0,
-            status: 0,
-            cycles: 0,
+            status: DEFAULT_STATUS,
         };
-        state.program_counter = PC_START;
-        state.next_pc = PC_START;
 
         state
+    }
+
+    pub fn clear(&mut self) {
+        self.acc = 0;
+        self.x = 0;
+        self.y = 0;
+
+        self.program_counter = 0;
+        self.next_pc = 0;
+        self.stack_pointer = 0;
+        self.status = DEFAULT_STATUS;
     }
 
     pub fn calculate_relative_pc(&self, offset: i8) -> u16 {
@@ -48,6 +54,7 @@ impl State {
         }
     }
 
+    pub fn get_next_pc(&self) -> u16 { self.next_pc }
     pub fn set_next_pc(&mut self, pc: u16) {
         self.next_pc = pc;
     }
@@ -76,7 +83,6 @@ impl State {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {

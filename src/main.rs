@@ -18,6 +18,8 @@ fn main() {
     let mut nes = NES::new();
     nes.load_rom(rom.as_slice());
 
+    nes.reset();
+
     let _result = ui::main::run(&mut nes).unwrap();
 }
 

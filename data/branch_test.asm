@@ -4,6 +4,7 @@
 
     INX
     INX
+    org $4090
 start:
 
     LDA #$10
@@ -51,6 +52,29 @@ foo4:
     ADC #$70
     BVS foo5
     JMP start
+    JMP start
+    JMP start
+    JMP start
+    JMP start
+    JMP start
+    JMP start
+    JMP start
+    JMP start
+    JMP start
+    JMP start
+    JMP start
+    JMP start
+    JMP start
+    JMP start
+    JMP start
+    JMP start
+    JMP start
+    JMP start
+    JMP start
+    JMP start
+    JMP start
+
+
 foo5:
     BRK
     org $FFFC

@@ -57,11 +57,6 @@ fn _render_textured_rect(canvas: &mut Canvas<Window>,
                          w: u32,
                          h: u32) -> Result<(), String> {
     let target = rect!(x, y, w, h);
-
-    //texture.set_color_mod(color.r, color.g, color.b);
-
-
-    //canvas.fill_rect(target)?;
     canvas.copy(&texture, None, Some(target))?;
 
     Ok(())

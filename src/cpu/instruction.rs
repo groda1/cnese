@@ -95,12 +95,12 @@ impl Operation {
             Operation::BCS => BCS,
             Operation::BEQ => BEQ,
             Operation::BIT => BIT,
-            Operation::BMI  => BMI,
-            Operation::BNE  => BNE,
-            Operation::BPL  => BPL,
-            Operation::BRK  => BRK,
-            Operation::BVC  => BVC,
-            Operation::BVS  => BVS,
+            Operation::BMI => BMI,
+            Operation::BNE => BNE,
+            Operation::BPL => BPL,
+            Operation::BRK => BRK,
+            Operation::BVC => BVC,
+            Operation::BVS => BVS,
             Operation::CLC => CLC,
             Operation::CLD => CLD,
             Operation::CLI => CLI,
@@ -164,24 +164,21 @@ const ASL_M: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| 
 };
 
 const BCC: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
-    if !state.get_status(state::SR_MASK_CARRY) {
+    if _should_bcc(state) {
         state.set_next_pc(operand);
     }
-    // TODO BRANCH CYCLE PENALTY
 };
 
 const BCS: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
-    if state.get_status(state::SR_MASK_CARRY) {
+    if _should_bcs(state) {
         state.set_next_pc(operand);
     }
-    // TODO BRANCH CYCLE PENALTY
 };
 
 const BEQ: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
-    if state.get_status(state::SR_MASK_ZERO) {
+    if _should_beq(state) {
         state.set_next_pc(operand);
     }
-    // TODO BRANCH CYCLE PENALTY
 };
 
 const BIT: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
@@ -192,24 +189,22 @@ const BIT: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
 };
 
 const BMI: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
-    if state.get_status(state::SR_MASK_NEGATIVE) {
+    if _should_bmi(state) {
         state.set_next_pc(operand);
     }
-    // TODO BRANCH CYCLE PENALTY
 };
 
+
 const BNE: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
-    if !state.get_status(state::SR_MASK_ZERO) {
+    if _should_bne(state) {
         state.set_next_pc(operand);
     }
-    // TODO BRANCH CYCLE PENALTY
 };
 
 const BPL: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
-    if !state.get_status(state::SR_MASK_NEGATIVE) {
+    if _should_bpl(state) {
         state.set_next_pc(operand);
     }
-    // TODO BRANCH CYCLE PENALTY
 };
 
 const BRK: OperationFn = |_state: &mut State, _bus: &mut Databus, _operand: u16| {
@@ -217,19 +212,16 @@ const BRK: OperationFn = |_state: &mut State, _bus: &mut Databus, _operand: u16|
 };
 
 const BVC: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
-    if !state.get_status(state::SR_MASK_OVERFLOW) {
+    if _should_bvc(state) {
         state.set_next_pc(operand);
     }
-    // TODO BRANCH CYCLE PENALTY
 };
 
 const BVS: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
-    if state.get_status(state::SR_MASK_OVERFLOW) {
+    if _should_bvs(state) {
         state.set_next_pc(operand);
     }
-    // TODO BRANCH CYCLE PENALTY
 };
-
 
 const SBC: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     adc(state, !(operand as u8));
@@ -467,6 +459,7 @@ lazy_static! {
     };
 }
 
+
 #[derive(Clone, Copy)]
 struct Opcode {
     operation: Operation,
@@ -484,6 +477,36 @@ impl Opcode {
            page_boundary_penalty: bool) -> Opcode {
         Opcode { operation, mode, size, cycles, page_boundary_penalty }
     }
+
+    pub fn is_branch(&self) -> bool {
+        match self.operation {
+            Operation::BCC
+            | Operation::BCS
+            | Operation::BEQ
+            | Operation::BMI
+            | Operation::BNE
+            | Operation::BPL
+            | Operation::BVC
+            | Operation::BVS
+            => true,
+
+            _ => false
+        }
+    }
+    pub fn will_branch(&self, state: &State) -> bool {
+        match self.operation {
+            Operation::BCC => _should_bcc(state),
+            Operation::BCS => _should_bcs(state),
+            Operation::BEQ => _should_beq(state),
+            Operation::BMI => _should_bmi(state),
+            Operation::BNE => _should_bne(state),
+            Operation::BPL => _should_bpl(state),
+            Operation::BVC => _should_bvc(state),
+            Operation::BVS => _should_bvs(state),
+
+            _ => unreachable!()
+        }
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -500,6 +523,27 @@ impl Instruction {
     pub fn execute(&self, state: &mut State, bus: &mut Databus) {
         let evalued_operand = self.opcode.mode.eval(state, bus, self.operand);
         self.opcode.operation.get_fn()(state, bus, evalued_operand);
+    }
+    pub fn get_cycle_cost(&self, state: &State, bus: &Databus) -> u8 {
+        let mut cost = self.opcode.cycles;
+
+        if self.opcode.is_branch() {
+            if self.opcode.will_branch(state) {
+                let next_pc = state.get_next_pc();
+                let branch_pc= state.calculate_relative_pc(self.operand as i8);
+
+                if (next_pc & 0xff00) != (branch_pc & 0xff00) {
+                    cost += 2;
+                } else {
+                    cost += 1;
+                }
+            }
+        } else if self.opcode.page_boundary_penalty
+            && self.opcode.mode.crossing_page_boundry(state, bus, self.operand) {
+            cost += 1;
+        }
+
+        return cost;
     }
 
     pub fn get_size(&self) -> u8 {
@@ -550,4 +594,31 @@ pub fn deassemble(rom: &[u8]) -> Vec<Instruction> {
     instructions
 }
 
+pub static DUMMY_INSTRUCTION: Instruction = Instruction {
+    opcode: Opcode {
+        operation: Operation::UNKNOWN,
+        mode: AddressingMode::Unknown,
+        size: 0,
+        cycles: 0,
+        page_boundary_penalty: false,
+    },
+    operand: 0,
+};
+
+
+fn _should_bcc(state: &State) -> bool { !state.get_status(state::SR_MASK_CARRY) }
+
+fn _should_bcs(state: &State) -> bool { state.get_status(state::SR_MASK_CARRY) }
+
+fn _should_beq(state: &State) -> bool { state.get_status(state::SR_MASK_ZERO) }
+
+fn _should_bmi(state: &State) -> bool { state.get_status(state::SR_MASK_NEGATIVE) }
+
+fn _should_bne(state: &State) -> bool { !state.get_status(state::SR_MASK_ZERO) }
+
+fn _should_bpl(state: &State) -> bool { !state.get_status(state::SR_MASK_NEGATIVE) }
+
+fn _should_bvc(state: &State) -> bool { !state.get_status(state::SR_MASK_OVERFLOW) }
+
+fn _should_bvs(state: &State) -> bool { state.get_status(state::SR_MASK_OVERFLOW) }
 

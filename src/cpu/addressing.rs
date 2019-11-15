@@ -12,14 +12,10 @@ pub const RELATIVE: AddressingModeFn = |state: &State, _bus: &Databus, operand: 
 
 pub const ABSOLUTE: AddressingModeFn = |_state: &State, _bus: &Databus, operand: u16| -> u16 { operand };
 pub const ABSOLUTE_INDEXED_X: AddressingModeFn = |state: &State, _bus: &Databus, operand: u16| -> u16 {
-    // TODO check for page boundary
-
     operand.wrapping_add(state.x as u16)
 };
 
 pub const ABSOLUTE_INDEXED_Y: AddressingModeFn = |state: &State, _bus: &Databus, operand: u16| -> u16 {
-    // TODO check for page boundary
-
     operand.wrapping_add(state.y as u16)
 };
 
@@ -34,27 +30,17 @@ pub const ZEROPAGE_INDEXED_Y: AddressingModeFn = |state: &State, _bus: &Databus,
 };
 
 pub const INDIRECT: AddressingModeFn = |_state: &State, bus: &Databus, operand: u16| -> u16 {
-    let lo = bus.read(operand);
-    let hi = bus.read(operand + 1);
-
-    ((hi as u16) << 8) + lo as u16
+    bus.read_u16(operand)
 };
 
 pub const INDEXED_INDIRECT_X: AddressingModeFn = |state: &State, bus: &Databus, operand: u16| -> u16 {
     let addr = ((operand as u8).wrapping_add(state.x)) as u16;
 
-    let lo = bus.read(addr);
-    let hi = bus.read(addr + 1);
-
-    ((hi as u16) << 8) + lo as u16
+    bus.read_u16(addr)
 };
 
 pub const INDIRECT_INDEXED_Y: AddressingModeFn = |state: &State, bus: &Databus, operand: u16| -> u16 {
-    let lo = bus.read(operand);
-    let hi = bus.read(operand + 1);
-
-    // TODO CHECK for page boundary
-    ((hi as u16) << 8) + lo as u16 + state.y as u16
+    bus.read_u16(operand) + state.y as u16
 };
 
 
@@ -79,6 +65,15 @@ pub enum AddressingMode {
 impl AddressingMode {
     pub fn eval(&self, state: &State, bus: &Databus, operand: u16) -> u16 {
         self.get_fn()(state, bus, operand)
+    }
+
+    pub fn crossing_page_boundry(&self, state: &State, bus: &Databus, operand: u16) -> bool {
+        match *self {
+            AddressingMode::AbsoluteIndexedX => _crossing_page(operand, state.x),
+            AddressingMode::AbsoluteIndexedY => _crossing_page(operand, state.y),
+            AddressingMode::IndirectIndexedY => _crossing_page(bus.read_u16(operand), state.y),
+            _ => false
+        }
     }
 
     fn get_fn(&self) -> AddressingModeFn {
@@ -118,4 +113,8 @@ impl AddressingMode {
             _ => format!("##")
         }
     }
+}
+
+fn _crossing_page(operand: u16, offset: u8) -> bool {
+    (operand & 0xff00) != ((operand + offset as u16) & 0xff00)
 }

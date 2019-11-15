@@ -127,7 +127,7 @@ impl<'a> RenderableWindow for FramerateCounter {
               y: i32,
               nes: &NES) -> Result<(), String> {
         util::render_text_small(canvas, font, x, y,
-                                format!("FPS: {}", nes.get_frames_dropped()).as_str(),
+                                format!("FPS: {}", nes.get_actual_framerate()).as_str(),
         )?;
 
         Ok(())
@@ -200,10 +200,8 @@ impl<'a> RenderableWindow for MemoryWindow {
                                     line.as_str(),
             )?;
 
-
             i += 1;
         }
-
 
         Ok(())
     }
@@ -345,6 +343,7 @@ impl InstructionWindow {
     }
 
     fn readjust(&mut self, addr: usize) {
+        if self.addr_to_instr_index.get(&addr).is_none() { return };
         let active_instr_index = *self.addr_to_instr_index.get(&addr).unwrap();
 
         if active_instr_index >
