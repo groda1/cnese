@@ -105,7 +105,7 @@ impl AddressingMode {
             AddressingMode::Zeropage => format!("${:02X}", operand),
             AddressingMode::ZeropageIndexedX => format!("${:02X},X", operand),
             AddressingMode::ZeropageIndexedY => format!("${:02X},Y", operand),
-            AddressingMode::Relative => format! ("${:02X}", operand as i8),
+            AddressingMode::Relative => format!("${:02X}", operand as i8),
             AddressingMode::Accumulator => format! {"A"},
             AddressingMode::Indirect => format! {"(${:04X})", operand},
             AddressingMode::IndexedIndirectX => format! {"(${:02X},X)", operand},

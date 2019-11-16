@@ -530,7 +530,7 @@ impl Instruction {
         if self.opcode.is_branch() {
             if self.opcode.will_branch(state) {
                 let next_pc = state.get_next_pc();
-                let branch_pc= state.calculate_relative_pc(self.operand as i8);
+                let branch_pc = state.calculate_relative_pc(self.operand as i8);
 
                 if (next_pc & 0xff00) != (branch_pc & 0xff00) {
                     cost += 2;
