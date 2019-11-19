@@ -21,19 +21,7 @@ $FFFA, $FFFB ... NMI (Non-Maskable Interrupt) vector
 $FFFC, $FFFD ... RES (Reset) vector
 $FFFE, $FFFF ... IRQ (Interrupt Request) vector
 */
-/*
- #  address R/W description
---- ------- --- -----------------------------------------------
- 1    PC     R  fetch opcode (and discard it - $00 (BRK) is forced into the opcode register instead)
- 2    PC     R  read next instruction byte (actually the same as above, since PC increment is suppressed. Also discarded.)
- 3  $0100,S  W  push PCH on stack, decrement S
- 4  $0100,S  W  push PCL on stack, decrement S
-*** At this point, the signal status determines which interrupt vector is used ***
- 5  $0100,S  W  push P on stack (with B flag *clear*), decrement S
- 6   A       R  fetch PCL (A = FFFE for IRQ, A = FFFA for NMI), set I flag
- 7   A       R  fetch PCH (A = FFFF for IRQ, A = FFFB for NMI)
 
- */
 
 
 pub struct Databus {

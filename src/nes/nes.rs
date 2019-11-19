@@ -39,7 +39,10 @@ impl NES {
         self.databus.load_rom(rom_data);
     }
 
-
+    pub fn set_irq_lo(&mut self) { self.cpu.set_irq_lo(); }
+    pub fn set_irq_hi(&mut self) { self.cpu.set_irq_hi(); }
+    pub fn set_nmi_hi(&mut self) { self.cpu.set_nmi_hi(); }
+    pub fn set_nmi_lo(&mut self) { self.cpu.set_nmi_lo(); }
 
     pub fn get_actual_framerate(&self) -> u32 { self._actual_framerate }
 

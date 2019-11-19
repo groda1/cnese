@@ -2,6 +2,7 @@ use super::databus::Databus;
 use super::state::State;
 use super::state;
 use super::addressing::AddressingMode;
+use super::cpu;
 
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy)]
@@ -40,8 +41,11 @@ enum Operation {
     SED,
     SEI,
     STA,
+    RTI,
 
     UNKNOWN,
+    INTERNAL_IRQ,
+    INTERNAL_NMI,
 }
 
 impl Operation {
@@ -81,6 +85,7 @@ impl Operation {
             Operation::SED => "SED",
             Operation::SEI => "SEI",
             Operation::STA => "STA",
+            Operation::RTI => "RTI",
             _ => "##"
         }
     }
@@ -121,7 +126,10 @@ impl Operation {
             Operation::SED => SED,
             Operation::SEI => SEI,
             Operation::STA => STA,
-            Operation::UNKNOWN => NOT_IMPLEMENTED
+            Operation::RTI => RTI,
+            Operation::UNKNOWN => NOT_IMPLEMENTED,
+            Operation::INTERNAL_IRQ => INTERNAL_IRQ_FN,
+            Operation::INTERNAL_NMI => INTERNAL_NMI_FN,
         }
     }
 }
@@ -133,23 +141,23 @@ const NOT_IMPLEMENTED: OperationFn = |_state: &mut State, _bus: &mut Databus, _o
 };
 
 const ADC: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
-    adc(state, operand as u8);
+    _adc(state, operand as u8);
 };
 
 const AND: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     state.acc &= operand as u8;
 
-    state.set_status(state::SR_MASK_NEGATIVE, state.acc >= 128);
-    state.set_status(state::SR_MASK_ZERO, state.acc == 0);
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
 };
 
 const ASL_A: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
     let overflow = (state.acc & 0x80) > 0;
     state.acc <<= 1;
 
-    state.set_status(state::SR_MASK_CARRY, overflow);
-    state.set_status(state::SR_MASK_NEGATIVE, state.acc >= 128);
-    state.set_status(state::SR_MASK_ZERO, state.acc == 0);
+    state.set_status_field(state::SR_MASK_CARRY, overflow);
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
 };
 
 const ASL_M: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
@@ -158,9 +166,9 @@ const ASL_M: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| 
     value <<= 1;
     bus.write(operand, value);
 
-    state.set_status(state::SR_MASK_CARRY, overflow);
-    state.set_status(state::SR_MASK_NEGATIVE, value >= 128);
-    state.set_status(state::SR_MASK_ZERO, value == 0);
+    state.set_status_field(state::SR_MASK_CARRY, overflow);
+    state.set_status_field(state::SR_MASK_NEGATIVE, value >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, value == 0);
 };
 
 const BCC: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
@@ -183,9 +191,9 @@ const BEQ: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
 
 const BIT: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     let op = operand as u8;
-    state.set_status(state::SR_MASK_NEGATIVE, (op & state::SR_MASK_NEGATIVE) > 0);
-    state.set_status(state::SR_MASK_OVERFLOW, (op & state::SR_MASK_OVERFLOW) > 0);
-    state.set_status(state::SR_MASK_ZERO, (op & state.acc) > 0);
+    state.set_status_field(state::SR_MASK_NEGATIVE, (op & state::SR_MASK_NEGATIVE) > 0);
+    state.set_status_field(state::SR_MASK_OVERFLOW, (op & state::SR_MASK_OVERFLOW) > 0);
+    state.set_status_field(state::SR_MASK_ZERO, (op & state.acc) > 0);
 };
 
 const BMI: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
@@ -193,7 +201,6 @@ const BMI: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
         state.set_next_pc(operand);
     }
 };
-
 
 const BNE: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     if _should_bne(state) {
@@ -207,8 +214,9 @@ const BPL: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     }
 };
 
-const BRK: OperationFn = |_state: &mut State, _bus: &mut Databus, _operand: u16| {
-    unimplemented!();
+const BRK: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
+    state.set_next_pc(state.calculate_relative_pc(1));
+    _handle_interrupt(state, bus, cpu::IRQ_VECTOR_ADDRESS, true);
 };
 
 const BVC: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
@@ -224,67 +232,67 @@ const BVS: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
 };
 
 const SBC: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
-    adc(state, !(operand as u8));
+    _adc(state, !(operand as u8));
 };
 
 const CLC: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
-    state.set_status(state::SR_MASK_CARRY, false);
+    state.set_status_field(state::SR_MASK_CARRY, false);
 };
 
 const CLD: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
-    state.set_status(state::SR_MASK_DECIMAL, false);
+    state.set_status_field(state::SR_MASK_DECIMAL, false);
 };
 
 const CLI: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
-    state.set_status(state::SR_MASK_INTERRUPT, false);
+    state.set_status_field(state::SR_MASK_INTERRUPT, false);
 };
 
 const CLV: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
-    state.set_status(state::SR_MASK_OVERFLOW, false);
+    state.set_status_field(state::SR_MASK_OVERFLOW, false);
 };
 
 const DEC: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
     let value = bus.read(operand).wrapping_sub(1);
     bus.write(operand, value);
 
-    state.set_status(state::SR_MASK_NEGATIVE, value >= 128);
-    state.set_status(state::SR_MASK_ZERO, value == 0);
+    state.set_status_field(state::SR_MASK_NEGATIVE, value >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, value == 0);
 };
 
 const DEX: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
     state.x = state.x.wrapping_sub(1);
 
-    state.set_status(state::SR_MASK_NEGATIVE, state.x >= 128);
-    state.set_status(state::SR_MASK_ZERO, state.x == 0);
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.x >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.x == 0);
 };
 
 const DEY: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
     state.y = state.y.wrapping_sub(1);
 
-    state.set_status(state::SR_MASK_NEGATIVE, state.y >= 128);
-    state.set_status(state::SR_MASK_ZERO, state.y == 0);
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.y >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.y == 0);
 };
 
 const INC: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
     let value = bus.read(operand).wrapping_add(1);
     bus.write(operand, value);
 
-    state.set_status(state::SR_MASK_NEGATIVE, value >= 128);
-    state.set_status(state::SR_MASK_ZERO, value == 0);
+    state.set_status_field(state::SR_MASK_NEGATIVE, value >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, value == 0);
 };
 
 const INX: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
     state.x = state.x.wrapping_add(1);
 
-    state.set_status(state::SR_MASK_NEGATIVE, state.x >= 128);
-    state.set_status(state::SR_MASK_ZERO, state.x == 0);
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.x >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.x == 0);
 };
 
 const INY: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
     state.y = state.y.wrapping_add(1);
 
-    state.set_status(state::SR_MASK_NEGATIVE, state.y >= 128);
-    state.set_status(state::SR_MASK_ZERO, state.y == 0);
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.y >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.y == 0);
 };
 
 const JMP: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
@@ -294,54 +302,63 @@ const JMP: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
 const LDA: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     state.acc = operand as u8;
 
-    state.set_status(state::SR_MASK_NEGATIVE, state.acc >= 128);
-    state.set_status(state::SR_MASK_ZERO, state.acc == 0);
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
 };
 
 const LDX: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     state.x = operand as u8;
 
-    state.set_status(state::SR_MASK_NEGATIVE, state.x >= 128);
-    state.set_status(state::SR_MASK_ZERO, state.x == 0);
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.x >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.x == 0);
 };
 
 const LDY: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     state.y = operand as u8;
 
-    state.set_status(state::SR_MASK_NEGATIVE, state.y >= 128);
-    state.set_status(state::SR_MASK_ZERO, state.y == 0);
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.y >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.y == 0);
 };
 
 const NOP: OperationFn = |_state: &mut State, _bus: &mut Databus, _operand: u16| {};
 
 const SEC: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
-    state.set_status(state::SR_MASK_CARRY, true);
+    state.set_status_field(state::SR_MASK_CARRY, true);
 };
 
 const SED: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
-    state.set_status(state::SR_MASK_DECIMAL, true);
+    state.set_status_field(state::SR_MASK_DECIMAL, true);
 };
 
 const SEI: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
-    state.set_status(state::SR_MASK_INTERRUPT, true);
+    state.set_status_field(state::SR_MASK_INTERRUPT, true);
 };
 
 const STA: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
     bus.write(operand, state.acc);
 };
 
+const RTI: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+    let status_u8 = _pull_stack(state, bus);
 
-fn adc(state: &mut State, operand: u8) {
-    let sum = state.acc.wrapping_add(operand).wrapping_add(state.get_status(state::SR_MASK_CARRY) as u8);
-    let carry = (operand as u16 + state.acc as u16 + state.get_status(state::SR_MASK_CARRY) as u16) > 0xff;
-    let overflow = (!(state.acc ^ operand) & (state.acc ^ sum) & 0x80) > 0;
-    state.acc = sum;
+    let mut status = state::Status::from_u8(status_u8);
+    status.set(state::SR_MASK_BREAK, false);
+    state.set_status(status);
 
-    state.set_status(state::SR_MASK_NEGATIVE, state.acc >= 128);
-    state.set_status(state::SR_MASK_ZERO, state.acc == 0);
-    state.set_status(state::SR_MASK_CARRY, carry);
-    state.set_status(state::SR_MASK_OVERFLOW, overflow);
-}
+    let pc_lo = _pull_stack(state, bus);
+    let pc_hi = _pull_stack(state, bus);
+
+    let next_pc = ((pc_hi as u16) << 8) + pc_lo as u16;
+    state.set_next_pc(next_pc);
+};
+
+const INTERNAL_IRQ_FN: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
+    _handle_interrupt(state, bus, cpu::IRQ_VECTOR_ADDRESS, false);
+};
+
+const INTERNAL_NMI_FN: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
+    _handle_interrupt(state, bus, cpu::NMI_VECTOR_ADDRESS, false);
+};
 
 lazy_static! {
     static ref OPCODE_SET: Vec <Opcode> = {
@@ -454,6 +471,8 @@ lazy_static! {
         opcodes[0x99] = Opcode::new(Operation::STA, AddressingMode::AbsoluteIndexedY, 3, 5, false);
         opcodes[0x81] = Opcode::new(Operation::STA, AddressingMode::IndexedIndirectX, 2, 6, false);
         opcodes[0x91] = Opcode::new(Operation::STA, AddressingMode::IndirectIndexedY, 2, 6, false);
+
+        opcodes[0x40] = Opcode::new(Operation::RTI, AddressingMode::Implied, 1, 6, false);
 
         opcodes
     };
@@ -575,7 +594,7 @@ pub fn deassemble(rom: &[u8]) -> Vec<Instruction> {
     let mut i: usize = 0;
     let size = rom.len();
 
-    while i < size {
+    while i < (size-6) {
         let opcode = OPCODE_SET[rom[i] as usize];
 
         let mut operand = 0;
@@ -605,20 +624,81 @@ pub static DUMMY_INSTRUCTION: Instruction = Instruction {
     operand: 0,
 };
 
+pub static IRQ_INSTRUCTION: Instruction = Instruction {
+    opcode: Opcode {
+        operation: Operation::INTERNAL_IRQ,
+        mode: AddressingMode::Unknown,
+        size: 0,
+        cycles: 6,
+        page_boundary_penalty: false,
+    },
+    operand: 0,
+};
 
-fn _should_bcc(state: &State) -> bool { !state.get_status(state::SR_MASK_CARRY) }
+pub static NMI_INSTRUCTION: Instruction = Instruction {
+    opcode: Opcode {
+        operation: Operation::INTERNAL_NMI,
+        mode: AddressingMode::Unknown,
+        size: 0,
+        cycles: 6,
+        page_boundary_penalty: false,
+    },
+    operand: 0,
+};
 
-fn _should_bcs(state: &State) -> bool { state.get_status(state::SR_MASK_CARRY) }
+fn _should_bcc(state: &State) -> bool { !state.get_status_field(state::SR_MASK_CARRY) }
 
-fn _should_beq(state: &State) -> bool { state.get_status(state::SR_MASK_ZERO) }
+fn _should_bcs(state: &State) -> bool { state.get_status_field(state::SR_MASK_CARRY) }
 
-fn _should_bmi(state: &State) -> bool { state.get_status(state::SR_MASK_NEGATIVE) }
+fn _should_beq(state: &State) -> bool { state.get_status_field(state::SR_MASK_ZERO) }
 
-fn _should_bne(state: &State) -> bool { !state.get_status(state::SR_MASK_ZERO) }
+fn _should_bmi(state: &State) -> bool { state.get_status_field(state::SR_MASK_NEGATIVE) }
 
-fn _should_bpl(state: &State) -> bool { !state.get_status(state::SR_MASK_NEGATIVE) }
+fn _should_bne(state: &State) -> bool { !state.get_status_field(state::SR_MASK_ZERO) }
 
-fn _should_bvc(state: &State) -> bool { !state.get_status(state::SR_MASK_OVERFLOW) }
+fn _should_bpl(state: &State) -> bool { !state.get_status_field(state::SR_MASK_NEGATIVE) }
 
-fn _should_bvs(state: &State) -> bool { state.get_status(state::SR_MASK_OVERFLOW) }
+fn _should_bvc(state: &State) -> bool { !state.get_status_field(state::SR_MASK_OVERFLOW) }
+
+fn _should_bvs(state: &State) -> bool { state.get_status_field(state::SR_MASK_OVERFLOW) }
+
+
+fn _adc(state: &mut State, operand: u8) {
+    let sum = state.acc.wrapping_add(operand).wrapping_add(state.get_status_field(state::SR_MASK_CARRY) as u8);
+    let carry = (operand as u16 + state.acc as u16 + state.get_status_field(state::SR_MASK_CARRY) as u16) > 0xff;
+    let overflow = (!(state.acc ^ operand) & (state.acc ^ sum) & 0x80) > 0;
+    state.acc = sum;
+
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
+    state.set_status_field(state::SR_MASK_CARRY, carry);
+    state.set_status_field(state::SR_MASK_OVERFLOW, overflow);
+}
+
+fn _handle_interrupt(state: &mut State, bus: &mut Databus, interrupt_vector: u16, b_flag: bool) {
+    let pc_hi = (state.get_next_pc() >> 8) as u8;
+    let pc_lo = (state.get_next_pc() & 0xff) as u8;
+
+    _push_stack(state, bus, pc_hi);
+    _push_stack(state, bus, pc_lo);
+
+    let mut status = *state.get_status_ref();
+    status.set(state::SR_MASK_BREAK, b_flag);
+    _push_stack(state, bus, status.get_as_u8());
+
+    state.set_status_field(state::SR_MASK_INTERRUPT, true);
+    state.set_next_pc(bus.read_u16(interrupt_vector));
+}
+
+fn _push_stack(state: &mut State, bus: &mut Databus, data: u8) {
+    bus.write(cpu::STACK_OFFSET + state.get_sp() as u16, data);
+    state.dec_sp();
+}
+
+fn _pull_stack(state: &mut State, bus: &Databus) -> u8 {
+    state.inc_sp();
+    let data = bus.read(cpu::STACK_OFFSET + state.get_sp() as u16);
+
+    data
+}
 

@@ -2,18 +2,22 @@
     org $4020
 
 start:
-    LDA
-    INX
-    BRK
-    .byte $00
-    INX
-    INX
-    JMP start
+    CLI
+loop:
+    INC $200,X
+    JMP loop
 
+nmisr:
+    INX
+    INX
+    RTI
 isr:
     INY
     INY
     RTI
+
+    org $FFFA
+    .word nmisr
     org $FFFC
     .word start
     org $FFFE

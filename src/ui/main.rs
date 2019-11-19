@@ -16,6 +16,7 @@ use crate::nes::nes::NES;
 use crate::cpu::instruction;
 use crate::ui::font::Font;
 use std::time::Duration;
+use std::io::repeat;
 
 static SCREEN_WIDTH: u32 = 1250;
 static SCREEN_HEIGHT: u32 = 600;
@@ -110,14 +111,25 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
                 Event::KeyDown { keycode: Some(Keycode::Escape), .. } |
                 Event::Quit { .. } => break 'mainloop,
                 Event::KeyDown { keycode: Some(Keycode::Space), .. } => {
-                    nes.tick();
-
+                    //nes.tick();
+                }
+                Event::KeyDown { keycode: Some(Keycode::I), repeat: false, .. } => {
+                    nes.set_irq_lo();
+                }
+                Event::KeyUp { keycode: Some(Keycode::I), repeat: false, .. } => {
+                    nes.set_irq_hi();
+                }
+                Event::KeyDown { keycode: Some(Keycode::N), repeat: false, .. } => {
+                    nes.set_nmi_lo();
+                }
+                Event::KeyUp { keycode: Some(Keycode::N), repeat: false, .. } => {
+                    nes.set_nmi_hi();
                 }
                 _ => {}
             }
         }
 
-        //nes.tick();
+        nes.tick();
         nes.set_actual_framerate(framerate);
         render(&mut canvas, &mut windows, nes)?;
 

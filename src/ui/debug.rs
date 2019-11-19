@@ -259,42 +259,42 @@ impl<'a> RenderableWindow for RegisterWindow {
 
 
         util::render_text(canvas,
-                          if state.get_status(state::SR_MASK_NEGATIVE) { font } else { secondary_font },
+                          if state.get_status_field(state::SR_MASK_NEGATIVE) { font } else { secondary_font },
                           x + FRAME_PADDING,
                           y + FRAME_PADDING + ROW_OFFSET * 3,
                           "N",
         )?;
 
         util::render_text(canvas,
-                          if state.get_status(state::SR_MASK_OVERFLOW) { font } else { secondary_font },
+                          if state.get_status_field(state::SR_MASK_OVERFLOW) { font } else { secondary_font },
                           x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 1),
                           y + FRAME_PADDING + ROW_OFFSET * 3,
                           "V",
         )?;
 
         util::render_text(canvas,
-                          if state.get_status(state::SR_MASK_DECIMAL) { font } else { secondary_font },
+                          if state.get_status_field(state::SR_MASK_DECIMAL) { font } else { secondary_font },
                           x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 4),
                           y + FRAME_PADDING + ROW_OFFSET * 3,
                           "D",
         )?;
 
         util::render_text(canvas,
-                          if state.get_status(state::SR_MASK_INTERRUPT) { font } else { secondary_font },
+                          if state.get_status_field(state::SR_MASK_INTERRUPT) { font } else { secondary_font },
                           x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 5),
                           y + FRAME_PADDING + ROW_OFFSET * 3,
                           "I",
         )?;
 
         util::render_text(canvas,
-                          if state.get_status(state::SR_MASK_ZERO) { font } else { secondary_font },
+                          if state.get_status_field(state::SR_MASK_ZERO) { font } else { secondary_font },
                           x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 6),
                           y + FRAME_PADDING + ROW_OFFSET * 3,
                           "Z",
         )?;
 
         util::render_text(canvas,
-                          if state.get_status(state::SR_MASK_CARRY) { font } else { secondary_font },
+                          if state.get_status_field(state::SR_MASK_CARRY) { font } else { secondary_font },
                           x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 7),
                           y + FRAME_PADDING + ROW_OFFSET * 3,
                           "C",

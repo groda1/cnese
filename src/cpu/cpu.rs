@@ -3,15 +3,21 @@ use super::databus::Databus;
 use super::instruction;
 use crate::cpu::instruction::Instruction;
 
-const NMI_VECTOR_ADDRESS: u16 = 0xFFFA;
-const RES_VECTOR_ADDRESS: u16 = 0xFFFC;
-const IRQ_VECTOR_ADDRESS: u16 = 0xFFFE;
+pub const NMI_VECTOR_ADDRESS: u16 = 0xFFFA;
+pub const RES_VECTOR_ADDRESS: u16 = 0xFFFC;
+pub const IRQ_VECTOR_ADDRESS: u16 = 0xFFFE;
+
+pub const STACK_OFFSET: u16 = 0x0100;
 
 pub struct Cpu {
     state: State,
 
     next_instruction: Instruction,
     unspent_cycles: u32,
+
+    irq: bool,
+    nmi: bool,
+    nmi_seen_hi: bool
 }
 
 impl Cpu {
@@ -20,14 +26,20 @@ impl Cpu {
             state: State::new(),
             next_instruction: instruction::DUMMY_INSTRUCTION,
             unspent_cycles: 0,
+
+            irq: true,
+            nmi: true,
+            nmi_seen_hi: true
         }
     }
 
-    pub fn set_irq_lo(&mut self) {}
-    pub fn set_irq_hi(&mut self) {}
-
-    pub fn set_nmi_hi(&mut self) {}
-    pub fn set_nmi_lo(&mut self) {}
+    pub fn set_irq_lo(&mut self) { self.irq = false;}
+    pub fn set_irq_hi(&mut self) { self.irq = true;}
+    pub fn set_nmi_hi(&mut self) {
+        self.nmi = true;
+        self.nmi_seen_hi = true;
+    }
+    pub fn set_nmi_lo(&mut self) { self.nmi = false; }
 
     pub fn reset(&mut self, bus: &Databus) {
         self.state.clear();
@@ -65,8 +77,15 @@ impl Cpu {
     pub fn get_state(&self) -> &State { &self.state }
 
     pub fn _load_next_instruction(&mut self, bus: &Databus) {
-        let next_instruction_binary = bus.read_slice(self.state.get_pc(), 3);
-        self.next_instruction = instruction::decode_instruction(next_instruction_binary);
+        if !self.nmi && self.nmi_seen_hi { // NMI
+            self.nmi_seen_hi = false;
+            self.next_instruction = instruction::NMI_INSTRUCTION;
+        } else if !self.irq && !self.state.get_status_field(super::state::SR_MASK_INTERRUPT) { // IRQ
+            self.next_instruction = instruction::IRQ_INSTRUCTION;
+        } else {
+            let next_instruction_binary = bus.read_slice(self.state.get_pc(), 3);
+            self.next_instruction = instruction::decode_instruction(next_instruction_binary);
+        }
     }
 }
 

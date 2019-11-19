@@ -6,7 +6,32 @@ pub const SR_MASK_INTERRUPT: u8 = 1 << 2;
 pub const SR_MASK_ZERO: u8 = 1 << 1;
 pub const SR_MASK_CARRY: u8 = 1 << 0;
 
-const DEFAULT_STATUS: u8 = 0;
+const DEFAULT_STATUS: Status = Status { status: SR_MASK_INTERRUPT };
+
+#[derive(Clone, Copy)]
+pub struct Status {
+    status: u8,
+}
+
+impl Status {
+    pub fn from_u8(status: u8) -> Status {
+        Status { status }
+    }
+
+    pub fn get_as_u8(&self) -> u8 { self.status }
+
+    pub fn get(&self, mask: u8) -> bool {
+        self.status & mask > 0
+    }
+
+    pub fn set(&mut self, mask: u8, value: bool) {
+        if value {
+            self.status |= mask;
+        } else {
+            self.status &= !mask;
+        }
+    }
+}
 
 pub struct State {
     pub acc: u8,
@@ -17,7 +42,7 @@ pub struct State {
     next_pc: u16,
 
     stack_pointer: u8,
-    status: u8,
+    status: Status,
 }
 
 impl State {
@@ -58,11 +83,9 @@ impl State {
     pub fn set_next_pc(&mut self, pc: u16) {
         self.next_pc = pc;
     }
-
     pub fn update_pc(&mut self) {
         self.program_counter = self.next_pc;
     }
-
     pub fn get_pc(&self) -> u16 {
         self.program_counter
     }
@@ -70,17 +93,23 @@ impl State {
     pub fn get_sp(&self) -> u8 {
         self.stack_pointer
     }
+    pub fn dec_sp(&mut self) { self.stack_pointer = self.stack_pointer.wrapping_sub(1); }
+    pub fn inc_sp(&mut self) { self.stack_pointer = self.stack_pointer.wrapping_add(1); }
 
-    pub fn get_status(&self, mask: u8) -> bool {
-        self.status & mask > 0
+    pub fn get_status_field(&self, mask: u8) -> bool {
+        self.status.get(mask)
     }
 
-    pub fn set_status(&mut self, field: u8, value: bool) {
-        if value {
-            self.status |= field;
-        } else {
-            self.status &= !field;
-        }
+    pub fn get_status_ref(&self) -> &Status {
+        &self.status
+    }
+
+    pub fn set_status_field(&mut self, mask: u8, value: bool) {
+        self.status.set(mask, value);
+    }
+
+    pub fn set_status(&mut self, status: Status) {
+        self.status = status;
     }
 }
 
@@ -95,11 +124,11 @@ mod tests {
         state.set_next_pc(0);
         state.update_pc();
 
-        state.offset_next_pc(100);
+        state.set_next_pc(state.calculate_relative_pc(100));
         state.update_pc();
         assert_eq!(100, state.program_counter);
 
-        state.offset_next_pc(-50);
+        state.set_next_pc(state.calculate_relative_pc(-50));
         state.update_pc();
         assert_eq!(50, state.program_counter);
     }
@@ -108,13 +137,13 @@ mod tests {
     fn test_set_status_field() {
         let mut state = State::new();
 
-        let initial = super::SR_MASK_OVERFLOW | super::SR_MASK_CARRY | super::SR_MASK_ZERO;
+        let initial = super::SR_MASK_OVERFLOW | super::SR_MASK_CARRY | super::SR_MASK_ZERO | super::SR_MASK_INTERRUPT;
 
-        state.set_status(initial, true);
-        assert_eq!(initial, state.status);
-        state.set_status(super::SR_MASK_BREAK, true);
-        assert_eq!(initial | super::SR_MASK_BREAK, state.status);
-        state.set_status(super::SR_MASK_BREAK, false);
-        assert_eq!(initial, state.status);
+        state.set_status_field(initial, true);
+        assert_eq!(initial, state.status.get_as_u8());
+        state.set_status_field(super::SR_MASK_BREAK, true);
+        assert_eq!(initial | super::SR_MASK_BREAK, state.status.get_as_u8());
+        state.set_status_field(super::SR_MASK_BREAK, false);
+        assert_eq!(initial, state.status.get_as_u8());
     }
 }
