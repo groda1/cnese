@@ -7,10 +7,12 @@ use super::cpu;
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy)]
 enum Operation {
-    ADC,
-    AND,
-    ASL_A,
-    ASL_M,
+    ADC_IMM,
+    ADC_MEM,
+    AND_IMM,
+    AND_MEM,
+    ASL_ACC,
+    ASL_MEM,
     BCC,
     BCS,
     BEQ,
@@ -25,6 +27,12 @@ enum Operation {
     CLD,
     CLI,
     CLV,
+    CMP_IMM,
+    CMP_MEM,
+    CPX_IMM,
+    CPX_MEM,
+    CPY_IMM,
+    CPY_MEM,
     DEC,
     DEX,
     DEY,
@@ -32,11 +40,15 @@ enum Operation {
     INX,
     INY,
     JMP,
-    LDA,
-    LDX,
-    LDY,
+    LDA_IMM,
+    LDA_MEM,
+    LDX_IMM,
+    LDX_MEM,
+    LDY_IMM,
+    LDY_MEM,
     NOP,
-    SBC,
+    SBC_IMM,
+    SBC_MEM,
     SEC,
     SED,
     SEI,
@@ -51,10 +63,12 @@ enum Operation {
 impl Operation {
     fn as_str(&self) -> &'static str {
         match *self {
-            Operation::ADC => "ADC",
-            Operation::AND => "AND",
-            Operation::ASL_A => "ASL",
-            Operation::ASL_M => "ASL",
+            Operation::ADC_IMM => "ADC",
+            Operation::ADC_MEM => "ADC",
+            Operation::AND_IMM => "AND",
+            Operation::AND_MEM => "AND",
+            Operation::ASL_ACC => "ASL",
+            Operation::ASL_MEM => "ASL",
             Operation::BCC => "BCC",
             Operation::BCS => "BCS",
             Operation::BEQ => "BEQ",
@@ -69,6 +83,12 @@ impl Operation {
             Operation::CLD => "CLD",
             Operation::CLI => "CLI",
             Operation::CLV => "CLV",
+            Operation::CMP_IMM => "CMP",
+            Operation::CMP_MEM => "CMP",
+            Operation::CPX_IMM => "CPX",
+            Operation::CPX_MEM => "CPX",
+            Operation::CPY_IMM => "CPY",
+            Operation::CPY_MEM => "CPY",
             Operation::DEC => "DEC",
             Operation::DEX => "DEX",
             Operation::DEY => "DEY",
@@ -76,11 +96,15 @@ impl Operation {
             Operation::INX => "INX",
             Operation::INY => "INY",
             Operation::JMP => "JMP",
-            Operation::LDA => "LDA",
-            Operation::LDX => "LDX",
-            Operation::LDY => "LDY",
+            Operation::LDA_IMM => "LDA",
+            Operation::LDA_MEM => "LDA",
+            Operation::LDX_IMM => "LDX",
+            Operation::LDX_MEM => "LDX",
+            Operation::LDY_IMM => "LDY",
+            Operation::LDY_MEM => "LDY",
             Operation::NOP => "NOP",
-            Operation::SBC => "SBC",
+            Operation::SBC_IMM => "SBC",
+            Operation::SBC_MEM => "SBC",
             Operation::SEC => "SEC",
             Operation::SED => "SED",
             Operation::SEI => "SEI",
@@ -92,10 +116,12 @@ impl Operation {
 
     fn get_fn(&self) -> OperationFn {
         match *self {
-            Operation::ADC => ADC,
-            Operation::AND => AND,
-            Operation::ASL_A => ASL_A,
-            Operation::ASL_M => ASL_M,
+            Operation::ADC_IMM => ADC_IMM,
+            Operation::ADC_MEM => ADC_MEM,
+            Operation::AND_IMM => AND_IMM,
+            Operation::AND_MEM => AND_MEM,
+            Operation::ASL_ACC => ASL_ACC,
+            Operation::ASL_MEM => ASL_MEM,
             Operation::BCC => BCC,
             Operation::BCS => BCS,
             Operation::BEQ => BEQ,
@@ -110,18 +136,28 @@ impl Operation {
             Operation::CLD => CLD,
             Operation::CLI => CLI,
             Operation::CLV => CLV,
+            Operation::CMP_IMM => CMP_IMM,
+            Operation::CMP_MEM => CMP_MEM,
+            Operation::CPX_IMM => CPX_IMM,
+            Operation::CPX_MEM => CPX_MEM,
+            Operation::CPY_IMM => CPY_IMM,
+            Operation::CPY_MEM => CPY_MEM,
             Operation::DEC => DEC,
             Operation::DEX => DEX,
             Operation::DEY => DEY,
             Operation::INC => INC,
             Operation::INX => INX,
             Operation::INY => INY,
-            Operation::LDA => LDA,
-            Operation::LDX => LDX,
-            Operation::LDY => LDY,
+            Operation::LDA_IMM => LDA_IMM,
+            Operation::LDA_MEM => LDA_MEM,
+            Operation::LDX_IMM => LDX_IMM,
+            Operation::LDX_MEM => LDX_MEM,
+            Operation::LDY_IMM => LDY_IMM,
+            Operation::LDY_MEM => LDY_MEM,
             Operation::JMP => JMP,
             Operation::NOP => NOP,
-            Operation::SBC => SBC,
+            Operation::SBC_IMM => SBC_IMM,
+            Operation::SBC_MEM => SBC_MEM,
             Operation::SEC => SEC,
             Operation::SED => SED,
             Operation::SEI => SEI,
@@ -140,18 +176,29 @@ const NOT_IMPLEMENTED: OperationFn = |_state: &mut State, _bus: &mut Databus, _o
     println!("Not Implemented!");
 };
 
-const ADC: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const ADC_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     _adc(state, operand as u8);
 };
 
-const AND: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const ADC_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+    _adc(state, bus.read(operand));
+};
+
+const AND_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     state.acc &= operand as u8;
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
 };
 
-const ASL_A: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+const AND_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+    state.acc &= bus.read(operand);
+
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
+};
+
+const ASL_ACC: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
     let overflow = (state.acc & 0x80) > 0;
     state.acc <<= 1;
 
@@ -160,7 +207,7 @@ const ASL_A: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16
     state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
 };
 
-const ASL_M: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+const ASL_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
     let mut value = bus.read(operand);
     let overflow = (value & 0x80) > 0;
     value <<= 1;
@@ -189,8 +236,8 @@ const BEQ: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     }
 };
 
-const BIT: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
-    let op = operand as u8;
+const BIT: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+    let op = bus.read(operand);
     state.set_status_field(state::SR_MASK_NEGATIVE, (op & state::SR_MASK_NEGATIVE) > 0);
     state.set_status_field(state::SR_MASK_OVERFLOW, (op & state::SR_MASK_OVERFLOW) > 0);
     state.set_status_field(state::SR_MASK_ZERO, (op & state.acc) > 0);
@@ -231,10 +278,6 @@ const BVS: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     }
 };
 
-const SBC: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
-    _adc(state, !(operand as u8));
-};
-
 const CLC: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
     state.set_status_field(state::SR_MASK_CARRY, false);
 };
@@ -249,6 +292,30 @@ const CLI: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| 
 
 const CLV: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
     state.set_status_field(state::SR_MASK_OVERFLOW, false);
+};
+
+const CMP_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+    _compare(state, operand as u8, state.acc);
+};
+
+const CMP_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+    _compare(state, bus.read(operand), state.acc);
+};
+
+const CPY_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+    _compare(state, operand as u8, state.y);
+};
+
+const CPY_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+    _compare(state, bus.read(operand), state.y);
+};
+
+const CPX_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+    _compare(state, operand as u8, state.x);
+};
+
+const CPX_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+    _compare(state, bus.read(operand), state.x);
 };
 
 const DEC: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
@@ -299,28 +366,57 @@ const JMP: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     state.set_next_pc(operand);
 };
 
-const LDA: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const LDA_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     state.acc = operand as u8;
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
 };
 
-const LDX: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const LDA_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+    state.acc = bus.read(operand);
+
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
+};
+
+const LDX_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     state.x = operand as u8;
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.x >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.x == 0);
 };
 
-const LDY: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const LDX_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+    state.x = bus.read(operand);
+
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.x >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.x == 0);
+};
+
+const LDY_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     state.y = operand as u8;
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.y >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.y == 0);
 };
 
+const LDY_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+    state.y = bus.read(operand);
+
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.y >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.y == 0);
+};
+
 const NOP: OperationFn = |_state: &mut State, _bus: &mut Databus, _operand: u16| {};
+
+const SBC_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+    _sbc(state, operand as u8);
+};
+
+const SBC_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+    _sbc(state, bus.read(operand));
+};
 
 const SEC: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
     state.set_status_field(state::SR_MASK_CARRY, true);
@@ -338,7 +434,7 @@ const STA: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
     bus.write(operand, state.acc);
 };
 
-const RTI: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+const RTI: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
     let status_u8 = _pull_stack(state, bus);
 
     let mut status = state::Status::from_u8(status_u8);
@@ -365,29 +461,29 @@ lazy_static! {
         let unknown = Opcode::new(Operation::UNKNOWN, AddressingMode::Unknown, 1, 0, false);
         let mut opcodes = vec![unknown; 256];
 
-        opcodes[0x69] = Opcode::new(Operation::ADC, AddressingMode::Immediate, 2, 2, false);
-        opcodes[0x65] = Opcode::new(Operation::ADC, AddressingMode::Zeropage, 2, 3, false);
-        opcodes[0x75] = Opcode::new(Operation::ADC, AddressingMode::ZeropageIndexedX, 2, 4, false);
-        opcodes[0x6d] = Opcode::new(Operation::ADC, AddressingMode::Absolute, 3, 4, false);
-        opcodes[0x7d] = Opcode::new(Operation::ADC, AddressingMode::AbsoluteIndexedX, 3, 4, true);
-        opcodes[0x79] = Opcode::new(Operation::ADC, AddressingMode::AbsoluteIndexedY, 3, 4, true);
-        opcodes[0x61] = Opcode::new(Operation::ADC, AddressingMode::IndexedIndirectX, 2, 6, false);
-        opcodes[0x71] = Opcode::new(Operation::ADC, AddressingMode::IndirectIndexedY, 2, 5, true);
+        opcodes[0x69] = Opcode::new(Operation::ADC_IMM, AddressingMode::Immediate, 2, 2, false);
+        opcodes[0x65] = Opcode::new(Operation::ADC_MEM, AddressingMode::Zeropage, 2, 3, false);
+        opcodes[0x75] = Opcode::new(Operation::ADC_MEM, AddressingMode::ZeropageIndexedX, 2, 4, false);
+        opcodes[0x6d] = Opcode::new(Operation::ADC_MEM, AddressingMode::Absolute, 3, 4, false);
+        opcodes[0x7d] = Opcode::new(Operation::ADC_MEM, AddressingMode::AbsoluteIndexedX, 3, 4, true);
+        opcodes[0x79] = Opcode::new(Operation::ADC_MEM, AddressingMode::AbsoluteIndexedY, 3, 4, true);
+        opcodes[0x61] = Opcode::new(Operation::ADC_MEM, AddressingMode::IndexedIndirectX, 2, 6, false);
+        opcodes[0x71] = Opcode::new(Operation::ADC_MEM, AddressingMode::IndirectIndexedY, 2, 5, true);
 
-        opcodes[0x29] = Opcode::new(Operation::AND, AddressingMode::Immediate, 2, 2, false);
-        opcodes[0x25] = Opcode::new(Operation::AND, AddressingMode::Zeropage, 2, 3, false);
-        opcodes[0x35] = Opcode::new(Operation::AND, AddressingMode::ZeropageIndexedX, 2, 4, false);
-        opcodes[0x2d] = Opcode::new(Operation::AND, AddressingMode::Absolute, 3, 4, false);
-        opcodes[0x3d] = Opcode::new(Operation::AND, AddressingMode::AbsoluteIndexedX, 3, 4, true);
-        opcodes[0x39] = Opcode::new(Operation::AND, AddressingMode::AbsoluteIndexedY, 3, 4, true);
-        opcodes[0x21] = Opcode::new(Operation::AND, AddressingMode::IndexedIndirectX, 2, 6, false);
-        opcodes[0x31] = Opcode::new(Operation::AND, AddressingMode::IndirectIndexedY, 2, 5, true);
+        opcodes[0x29] = Opcode::new(Operation::AND_IMM, AddressingMode::Immediate, 2, 2, false);
+        opcodes[0x25] = Opcode::new(Operation::AND_MEM, AddressingMode::Zeropage, 2, 3, false);
+        opcodes[0x35] = Opcode::new(Operation::AND_MEM, AddressingMode::ZeropageIndexedX, 2, 4, false);
+        opcodes[0x2d] = Opcode::new(Operation::AND_MEM, AddressingMode::Absolute, 3, 4, false);
+        opcodes[0x3d] = Opcode::new(Operation::AND_MEM, AddressingMode::AbsoluteIndexedX, 3, 4, true);
+        opcodes[0x39] = Opcode::new(Operation::AND_MEM, AddressingMode::AbsoluteIndexedY, 3, 4, true);
+        opcodes[0x21] = Opcode::new(Operation::AND_MEM, AddressingMode::IndexedIndirectX, 2, 6, false);
+        opcodes[0x31] = Opcode::new(Operation::AND_MEM, AddressingMode::IndirectIndexedY, 2, 5, true);
 
-        opcodes[0x0a] = Opcode::new(Operation::ASL_A, AddressingMode::Accumulator, 1, 2, false);
-        opcodes[0x06] = Opcode::new(Operation::ASL_M, AddressingMode::Zeropage, 2, 5, false);
-        opcodes[0x16] = Opcode::new(Operation::ASL_M, AddressingMode::ZeropageIndexedX, 2, 6, false);
-        opcodes[0x0e] = Opcode::new(Operation::ASL_M, AddressingMode::Absolute, 3, 6, false);
-        opcodes[0x1e] = Opcode::new(Operation::ASL_M, AddressingMode::AbsoluteIndexedX, 3, 7, false);
+        opcodes[0x0a] = Opcode::new(Operation::ASL_ACC, AddressingMode::Accumulator, 1, 2, false);
+        opcodes[0x06] = Opcode::new(Operation::ASL_MEM, AddressingMode::Zeropage, 2, 5, false);
+        opcodes[0x16] = Opcode::new(Operation::ASL_MEM, AddressingMode::ZeropageIndexedX, 2, 6, false);
+        opcodes[0x0e] = Opcode::new(Operation::ASL_MEM, AddressingMode::Absolute, 3, 6, false);
+        opcodes[0x1e] = Opcode::new(Operation::ASL_MEM, AddressingMode::AbsoluteIndexedX, 3, 7, false);
 
         opcodes[0x90] = Opcode::new(Operation::BCC, AddressingMode::Relative, 2, 2, true);
         opcodes[0xb0] = Opcode::new(Operation::BCS, AddressingMode::Relative, 2, 2, true);
@@ -409,6 +505,23 @@ lazy_static! {
         opcodes[0x58] = Opcode::new(Operation::CLI, AddressingMode::Implied, 1, 2, false);
         opcodes[0xb8] = Opcode::new(Operation::CLV, AddressingMode::Implied, 1, 2, false);
 
+        opcodes[0xc9] = Opcode::new(Operation::CMP_IMM, AddressingMode::Immediate, 2, 2, false);
+        opcodes[0xc5] = Opcode::new(Operation::CMP_MEM, AddressingMode::Zeropage, 2, 3, false);
+        opcodes[0xd5] = Opcode::new(Operation::CMP_MEM, AddressingMode::ZeropageIndexedX, 2, 4, false);
+        opcodes[0xcd] = Opcode::new(Operation::CMP_MEM, AddressingMode::Absolute, 3, 4, false);
+        opcodes[0xdd] = Opcode::new(Operation::CMP_MEM, AddressingMode::AbsoluteIndexedX, 3, 4, true);
+        opcodes[0xd9] = Opcode::new(Operation::CMP_MEM, AddressingMode::AbsoluteIndexedY, 3, 4, true);
+        opcodes[0xc1] = Opcode::new(Operation::CMP_MEM, AddressingMode::IndexedIndirectX, 2, 6, false);
+        opcodes[0xd1] = Opcode::new(Operation::CMP_MEM, AddressingMode::IndirectIndexedY, 2, 5, true);
+
+        opcodes[0xe0] = Opcode::new(Operation::CPX_IMM, AddressingMode::Immediate, 2, 2, false);
+        opcodes[0xe4] = Opcode::new(Operation::CPX_MEM, AddressingMode::Zeropage, 2, 3, false);
+        opcodes[0xec] = Opcode::new(Operation::CPX_MEM, AddressingMode::Absolute, 3, 4, false);
+
+        opcodes[0xc0] = Opcode::new(Operation::CPY_IMM, AddressingMode::Immediate, 2, 2, false);
+        opcodes[0xc4] = Opcode::new(Operation::CPY_MEM, AddressingMode::Zeropage, 2, 3, false);
+        opcodes[0xcc] = Opcode::new(Operation::CPY_MEM, AddressingMode::Absolute, 3, 4, false);
+
         opcodes[0xc6] = Opcode::new(Operation::DEC, AddressingMode::Zeropage, 2, 5, false);
         opcodes[0xd6] = Opcode::new(Operation::DEC, AddressingMode::ZeropageIndexedX, 2, 6, false);
         opcodes[0xce] = Opcode::new(Operation::DEC, AddressingMode::Absolute, 3, 6, false);
@@ -425,40 +538,40 @@ lazy_static! {
         opcodes[0xc8] = Opcode::new(Operation::INY, AddressingMode::Implied, 1, 2, false);
         opcodes[0xe8] = Opcode::new(Operation::INX, AddressingMode::Implied, 1, 2, false);
 
-        opcodes[0xa9] = Opcode::new(Operation::LDA, AddressingMode::Immediate, 2, 2, false);
-        opcodes[0xa5] = Opcode::new(Operation::LDA, AddressingMode::Zeropage, 2, 3, false);
-        opcodes[0xb5] = Opcode::new(Operation::LDA, AddressingMode::ZeropageIndexedX, 2, 4, false);
-        opcodes[0xad] = Opcode::new(Operation::LDA, AddressingMode::Absolute, 3, 4, false);
-        opcodes[0xbd] = Opcode::new(Operation::LDA, AddressingMode::AbsoluteIndexedX, 3, 4, true);
-        opcodes[0xb9] = Opcode::new(Operation::LDA, AddressingMode::AbsoluteIndexedY, 3, 4, true);
-        opcodes[0xa1] = Opcode::new(Operation::LDA, AddressingMode::IndexedIndirectX, 2, 6, false);
-        opcodes[0xb1] = Opcode::new(Operation::LDA, AddressingMode::IndirectIndexedY, 2, 5, true);
+        opcodes[0xa9] = Opcode::new(Operation::LDA_IMM, AddressingMode::Immediate, 2, 2, false);
+        opcodes[0xa5] = Opcode::new(Operation::LDA_MEM, AddressingMode::Zeropage, 2, 3, false);
+        opcodes[0xb5] = Opcode::new(Operation::LDA_MEM, AddressingMode::ZeropageIndexedX, 2, 4, false);
+        opcodes[0xad] = Opcode::new(Operation::LDA_MEM, AddressingMode::Absolute, 3, 4, false);
+        opcodes[0xbd] = Opcode::new(Operation::LDA_MEM, AddressingMode::AbsoluteIndexedX, 3, 4, true);
+        opcodes[0xb9] = Opcode::new(Operation::LDA_MEM, AddressingMode::AbsoluteIndexedY, 3, 4, true);
+        opcodes[0xa1] = Opcode::new(Operation::LDA_MEM, AddressingMode::IndexedIndirectX, 2, 6, false);
+        opcodes[0xb1] = Opcode::new(Operation::LDA_MEM, AddressingMode::IndirectIndexedY, 2, 5, true);
 
-        opcodes[0xa2] = Opcode::new(Operation::LDX, AddressingMode::Immediate, 2, 2, false);
-        opcodes[0xa6] = Opcode::new(Operation::LDX, AddressingMode::Zeropage, 2, 3, false);
-        opcodes[0xb6] = Opcode::new(Operation::LDX, AddressingMode::ZeropageIndexedY, 2, 4, false);
-        opcodes[0xae] = Opcode::new(Operation::LDX, AddressingMode::Absolute, 3, 4, false);
-        opcodes[0xbe] = Opcode::new(Operation::LDX, AddressingMode::AbsoluteIndexedY, 3, 4, true);
+        opcodes[0xa2] = Opcode::new(Operation::LDX_IMM, AddressingMode::Immediate, 2, 2, false);
+        opcodes[0xa6] = Opcode::new(Operation::LDX_MEM, AddressingMode::Zeropage, 2, 3, false);
+        opcodes[0xb6] = Opcode::new(Operation::LDX_MEM, AddressingMode::ZeropageIndexedY, 2, 4, false);
+        opcodes[0xae] = Opcode::new(Operation::LDX_MEM, AddressingMode::Absolute, 3, 4, false);
+        opcodes[0xbe] = Opcode::new(Operation::LDX_MEM, AddressingMode::AbsoluteIndexedY, 3, 4, true);
 
-        opcodes[0xa0] = Opcode::new(Operation::LDY, AddressingMode::Immediate, 2, 2, false);
-        opcodes[0xa4] = Opcode::new(Operation::LDY, AddressingMode::Zeropage, 2, 3, false);
-        opcodes[0xb4] = Opcode::new(Operation::LDY, AddressingMode::ZeropageIndexedX, 2, 4, false);
-        opcodes[0xac] = Opcode::new(Operation::LDY, AddressingMode::Absolute, 3, 4, false);
-        opcodes[0xbc] = Opcode::new(Operation::LDY, AddressingMode::AbsoluteIndexedX, 3, 4, true);
+        opcodes[0xa0] = Opcode::new(Operation::LDY_IMM, AddressingMode::Immediate, 2, 2, false);
+        opcodes[0xa4] = Opcode::new(Operation::LDY_MEM, AddressingMode::Zeropage, 2, 3, false);
+        opcodes[0xb4] = Opcode::new(Operation::LDY_MEM, AddressingMode::ZeropageIndexedX, 2, 4, false);
+        opcodes[0xac] = Opcode::new(Operation::LDY_MEM, AddressingMode::Absolute, 3, 4, false);
+        opcodes[0xbc] = Opcode::new(Operation::LDY_MEM, AddressingMode::AbsoluteIndexedX, 3, 4, true);
 
         opcodes[0xea] = Opcode::new(Operation::NOP, AddressingMode::Implied, 1, 2, false);
 
         opcodes[0x4c] = Opcode::new(Operation::JMP, AddressingMode::Absolute, 3, 3, false);
         opcodes[0x6c] = Opcode::new(Operation::JMP, AddressingMode::Indirect, 3, 5, false);
 
-        opcodes[0xe9] = Opcode::new(Operation::SBC, AddressingMode::Immediate, 2, 2, false);
-        opcodes[0xe5] = Opcode::new(Operation::SBC, AddressingMode::Zeropage, 2, 3, false);
-        opcodes[0xf5] = Opcode::new(Operation::SBC, AddressingMode::ZeropageIndexedX, 2, 4, false);
-        opcodes[0xed] = Opcode::new(Operation::SBC, AddressingMode::Absolute, 3, 4, false);
-        opcodes[0xfd] = Opcode::new(Operation::SBC, AddressingMode::AbsoluteIndexedX, 3, 4, true);
-        opcodes[0xf9] = Opcode::new(Operation::SBC, AddressingMode::AbsoluteIndexedY, 3, 4, true);
-        opcodes[0xe1] = Opcode::new(Operation::SBC, AddressingMode::IndexedIndirectX, 2, 6, false);
-        opcodes[0xf1] = Opcode::new(Operation::SBC, AddressingMode::IndirectIndexedY, 2, 5, true);
+        opcodes[0xe9] = Opcode::new(Operation::SBC_IMM, AddressingMode::Immediate, 2, 2, false);
+        opcodes[0xe5] = Opcode::new(Operation::SBC_MEM, AddressingMode::Zeropage, 2, 3, false);
+        opcodes[0xf5] = Opcode::new(Operation::SBC_MEM, AddressingMode::ZeropageIndexedX, 2, 4, false);
+        opcodes[0xed] = Opcode::new(Operation::SBC_MEM, AddressingMode::Absolute, 3, 4, false);
+        opcodes[0xfd] = Opcode::new(Operation::SBC_MEM, AddressingMode::AbsoluteIndexedX, 3, 4, true);
+        opcodes[0xf9] = Opcode::new(Operation::SBC_MEM, AddressingMode::AbsoluteIndexedY, 3, 4, true);
+        opcodes[0xe1] = Opcode::new(Operation::SBC_MEM, AddressingMode::IndexedIndirectX, 2, 6, false);
+        opcodes[0xf1] = Opcode::new(Operation::SBC_MEM, AddressingMode::IndirectIndexedY, 2, 5, true);
 
         opcodes[0x38] = Opcode::new(Operation::SEC, AddressingMode::Implied, 1, 2, false);
         opcodes[0xf8] = Opcode::new(Operation::SED, AddressingMode::Implied, 1, 2, false);
@@ -673,6 +786,19 @@ fn _adc(state: &mut State, operand: u8) {
     state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
     state.set_status_field(state::SR_MASK_CARRY, carry);
     state.set_status_field(state::SR_MASK_OVERFLOW, overflow);
+}
+
+fn _sbc(state: &mut State, operand: u8) {
+    _adc(state, !operand);
+}
+
+fn _compare(state: &mut State, mem: u8, operand: u8) {
+    let sum = operand.wrapping_add(!mem).wrapping_add(1);
+    let carry = (operand as u16 + (!mem) as u16) > 0xff;
+
+    state.set_status_field(state::SR_MASK_NEGATIVE, sum >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, sum == 0);
+    state.set_status_field(state::SR_MASK_CARRY, carry);
 }
 
 fn _handle_interrupt(state: &mut State, bus: &mut Databus, interrupt_vector: u16, b_flag: bool) {

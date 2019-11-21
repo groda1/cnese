@@ -14,9 +14,8 @@ use super::debug::DebugWindow;
 
 use crate::nes::nes::NES;
 use crate::cpu::instruction;
-use crate::ui::font::Font;
+
 use std::time::Duration;
-use std::io::repeat;
 
 static SCREEN_WIDTH: u32 = 1250;
 static SCREEN_HEIGHT: u32 = 600;
@@ -100,7 +99,7 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
     windows.push(&mut framerate_counter);
 
     let mut event_pump = sdl_context.event_pump()?;
-    let mut timer = sdl_context.timer()?;
+    let timer = sdl_context.timer()?;
     let mut framerate = FRAMERATE;
 
     'mainloop: loop {
@@ -111,7 +110,7 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
                 Event::KeyDown { keycode: Some(Keycode::Escape), .. } |
                 Event::Quit { .. } => break 'mainloop,
                 Event::KeyDown { keycode: Some(Keycode::Space), .. } => {
-                    //nes.tick();
+                    nes.tick();
                 }
                 Event::KeyDown { keycode: Some(Keycode::I), repeat: false, .. } => {
                     nes.set_irq_lo();
@@ -129,7 +128,7 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
             }
         }
 
-        nes.tick();
+        //nes.tick();
         nes.set_actual_framerate(framerate);
         render(&mut canvas, &mut windows, nes)?;
 

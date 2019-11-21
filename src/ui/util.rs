@@ -1,5 +1,5 @@
-use sdl2::render::{Canvas, TextureCreator, TextureQuery, Texture};
-use sdl2::video::{Window, WindowContext};
+use sdl2::render::{Canvas, Texture};
+use sdl2::video::{Window};
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use crate::ui::font::Font;

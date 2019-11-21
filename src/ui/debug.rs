@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use sdl2::render::{TextureCreator, Canvas};
-use sdl2::video::{WindowContext, Window};
+use sdl2::render::{Canvas};
+use sdl2::video::{Window};
 use sdl2::pixels::Color;
 
 use super::super::cpu::instruction::Instruction;
@@ -122,7 +122,7 @@ impl<'a> RenderableWindow for FramerateCounter {
     fn render(&mut self,
               canvas: &mut Canvas<Window>,
               font: &Font,
-              secondary_font: &Font,
+              _secondary_font: &Font,
               x: i32,
               y: i32,
               nes: &NES) -> Result<(), String> {

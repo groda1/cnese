@@ -1,10 +1,6 @@
-use std::collections::HashMap;
-
 use sdl2::render::{Texture, TextureCreator, TextureQuery};
 use sdl2::video::WindowContext;
-use std::str::Chars;
 use sdl2::pixels::Color;
-
 
 const CHARACTERS: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890!()$:><#, ";
 
