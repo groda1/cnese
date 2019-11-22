@@ -131,7 +131,7 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
         nes.set_actual_framerate(framerate);
         render(&mut canvas, &mut windows, nes)?;
 
-        let sleep_time_nano: i64 = FRAMETIME_NANO as i64 - (timer.performance_counter() - time) as i64;
+        let sleep_time_nano = FRAMETIME_NANO as i64 - (timer.performance_counter() - time) as i64;
         if sleep_time_nano < 0 {
             framerate  = 1_000_000_000/ (-sleep_time_nano + FRAMETIME_NANO as i64) as u32;
         } else {

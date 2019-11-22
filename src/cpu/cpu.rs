@@ -56,6 +56,7 @@ impl Cpu {
     pub fn tick(&mut self, bus: &mut Databus) {
         self.unspent_cycles += 1;
 
+        // TODO CALCLATE COST ONLY ONCE
         let cycle_cost = self.next_instruction.get_cycle_cost(
             self.get_state(), bus) as u32;
 
