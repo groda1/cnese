@@ -29,6 +29,9 @@ loop:
     LDA #$4F ;  127 (signed), 127 (unsigned)
     CMP #$3F ; -128 (signed), 128 (unsigned)
 
+	LDA #$AA
+	CMP #$22
+
 	JMP loop
 nmisr:
     INX
