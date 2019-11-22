@@ -46,7 +46,7 @@ fn render(canvas: &mut Canvas<Window>,
 pub fn run(nes: &mut NES) -> Result<(), String> {
     let deassembled_instructions = instruction::deassemble(nes.get_databus().get_cartridge());
 
-    let font_path: &Path = Path::new("src/ui/resources/nesfont.fon");
+    let font_rwops = sdl2::rwops::RWops::from_bytes(include_bytes!("resources/nesfont.fon"))?;
 
     let sdl_context = sdl2::init()?;
     let video_subsys = sdl_context.video()?;
@@ -61,8 +61,7 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
     let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
     let texture_creator = canvas.texture_creator();
 
-    let ttf_font = ttf_context.load_font(font_path, 128)?;
-
+    let ttf_font = ttf_context.load_font_from_rwops(font_rwops, 128)?;
     let font = super::font::Font::new(&texture_creator, &ttf_font, Color::from(TEXT_COLOR));
     let dark_font = super::font::Font::new(&texture_creator, &ttf_font, Color::from(TEXT_COLOR_DARK));
 

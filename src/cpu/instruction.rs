@@ -690,37 +690,27 @@ impl Instruction {
 pub fn decode_instruction(prg: &[u8]) -> Instruction {
     let opcode = OPCODE_SET[prg[0] as usize];
 
-    let mut operand = 0;
-    if opcode.size == 2 {
-        operand = prg[1] as u16;
-    } else if opcode.size == 3 {
-        operand = ((prg[2] as u16) << 8) + prg[1] as u16;
+    let operand;
+    match opcode.size {
+        1 => operand = 0,
+        2 => operand = prg[1] as u16,
+        3 => operand = ((prg[2] as u16) << 8) + prg[1] as u16,
+        _ => unreachable!()
     }
 
     Instruction::new(opcode, operand)
 }
 
 pub fn deassemble(rom: &[u8]) -> Vec<Instruction> {
-
-    // TODO REFAC
     let mut instructions: Vec<Instruction> = Vec::new();
     let mut i: usize = 0;
     let size = rom.len();
 
-    while i < (size-6) {
-        let opcode = OPCODE_SET[rom[i] as usize];
+    while i < (size - 6) {
+        let instruction = decode_instruction(&rom[i..i+3]);
+        i += instruction.opcode.size as usize;
 
-        let mut operand = 0;
-        if opcode.size == 2 {
-            operand = rom[i + 1] as u16;
-        } else if opcode.size == 3 {
-            operand = ((rom[i + 2] as u16) << 8) + rom[i + 1] as u16;
-        }
-
-        let x = Instruction::new(OPCODE_SET[rom[i] as usize], operand);
-        instructions.push(x);
-
-        i += opcode.size as usize;
+        instructions.push(instruction);
     }
 
     instructions
