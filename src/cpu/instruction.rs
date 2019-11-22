@@ -36,6 +36,8 @@ enum Operation {
     DEC,
     DEX,
     DEY,
+    EOR_IMM,
+    EOR_MEM,
     INC,
     INX,
     INY,
@@ -92,6 +94,8 @@ impl Operation {
             Operation::DEC => "DEC",
             Operation::DEX => "DEX",
             Operation::DEY => "DEY",
+            Operation::EOR_IMM => "EOR",
+            Operation::EOR_MEM => "EOR",
             Operation::INC => "INC",
             Operation::INX => "INX",
             Operation::INY => "INY",
@@ -145,6 +149,8 @@ impl Operation {
             Operation::DEC => DEC,
             Operation::DEX => DEX,
             Operation::DEY => DEY,
+            Operation::EOR_IMM => EOR_IMM,
+            Operation::EOR_MEM => EOR_MEM,
             Operation::INC => INC,
             Operation::INX => INX,
             Operation::INY => INY,
@@ -340,6 +346,20 @@ const DEY: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| 
     state.set_status_field(state::SR_MASK_ZERO, state.y == 0);
 };
 
+const EOR_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+    state.acc ^= operand as u8;
+
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
+};
+
+const EOR_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+    state.acc ^= bus.read(operand);
+
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
+};
+
 const INC: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
     let value = bus.read(operand).wrapping_add(1);
     bus.write(operand, value);
@@ -529,6 +549,15 @@ lazy_static! {
 
         opcodes[0xca] = Opcode::new(Operation::DEX, AddressingMode::Implied, 1, 2, false);
         opcodes[0x88] = Opcode::new(Operation::DEY, AddressingMode::Implied, 1, 2, false);
+
+        opcodes[0x49] = Opcode::new(Operation::EOR_IMM, AddressingMode::Immediate, 2, 2, false);
+        opcodes[0x45] = Opcode::new(Operation::EOR_MEM, AddressingMode::Zeropage, 2, 3, false);
+        opcodes[0x55] = Opcode::new(Operation::EOR_MEM, AddressingMode::ZeropageIndexedX, 2, 4, false);
+        opcodes[0x4d] = Opcode::new(Operation::EOR_MEM, AddressingMode::Absolute, 3, 4, false);
+        opcodes[0x5d] = Opcode::new(Operation::EOR_MEM, AddressingMode::AbsoluteIndexedX, 3, 4, true);
+        opcodes[0x59] = Opcode::new(Operation::EOR_MEM, AddressingMode::AbsoluteIndexedY, 3, 4, true);
+        opcodes[0x41] = Opcode::new(Operation::EOR_MEM, AddressingMode::IndexedIndirectX, 2, 6, false);
+        opcodes[0x51] = Opcode::new(Operation::EOR_MEM, AddressingMode::IndirectIndexedY, 2, 5, true);
 
         opcodes[0xe6] = Opcode::new(Operation::INC, AddressingMode::Zeropage, 2, 5, false);
         opcodes[0xf6] = Opcode::new(Operation::INC, AddressingMode::ZeropageIndexedX, 2, 6, false);

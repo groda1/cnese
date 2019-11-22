@@ -29,8 +29,15 @@ loop:
     LDA #$4F ;  127 (signed), 127 (unsigned)
     CMP #$3F ; -128 (signed), 128 (unsigned)
 
-	LDA #$AA
-	CMP #$22
+    LDA #$AA
+    CMP #$22
+
+    LDA #$17
+    STA $30
+    LDA #$AA
+    EOR #$22
+    LDA #$AA
+    EOR $30
 
 	JMP loop
 nmisr:
