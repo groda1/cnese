@@ -52,14 +52,24 @@ enum Operation {
     LSR_ACC,
     LSR_MEM,
     NOP,
+    ORA_IMM,
+    ORA_MEM,
+    PHA,
+    PHP,
+    PLA,
+    PLP,
+    ROL_ACC,
+    ROL_MEM,
+    ROR_ACC,
+    ROR_MEM,
+    RTI,
+    RTS,
     SBC_IMM,
     SBC_MEM,
     SEC,
     SED,
     SEI,
     STA,
-    RTI,
-    RTS,
 
     UNKNOWN,
     INTERNAL_IRQ,
@@ -114,14 +124,25 @@ impl Operation {
             Operation::LSR_ACC => "LSR",
             Operation::LSR_MEM => "LSR",
             Operation::NOP => "NOP",
+            Operation::ORA_IMM => "ORA",
+            Operation::ORA_MEM => "ORA",
+            Operation::PHA => "PHA",
+            Operation::PHP => "PHP",
+            Operation::PLA => "PLA",
+            Operation::PLP => "PLP",
+            Operation::ROL_ACC => "ROL",
+            Operation::ROL_MEM => "ROL",
+            Operation::ROR_ACC => "ROR",
+            Operation::ROR_MEM => "ROR",
+            Operation::RTI => "RTI",
+            Operation::RTS => "RTS",
             Operation::SBC_IMM => "SBC",
             Operation::SBC_MEM => "SBC",
             Operation::SEC => "SEC",
             Operation::SED => "SED",
             Operation::SEI => "SEI",
             Operation::STA => "STA",
-            Operation::RTI => "RTI",
-            Operation::RTS => "RTS",
+
             _ => "##"
         }
     }
@@ -173,14 +194,25 @@ impl Operation {
             Operation::JMP => JMP,
             Operation::JSR => JSR,
             Operation::NOP => NOP,
+            Operation::ORA_IMM => ORA_IMM,
+            Operation::ORA_MEM => ORA_MEM,
+            Operation::PHA => PHA,
+            Operation::PHP => PHP,
+            Operation::PLA => PLA,
+            Operation::PLP => PLP,
+            Operation::ROL_ACC => ROL_ACC,
+            Operation::ROL_MEM => ROL_MEM,
+            Operation::ROR_ACC => ROR_ACC,
+            Operation::ROR_MEM => ROR_MEM,
+            Operation::RTI => RTI,
+            Operation::RTS => RTS,
             Operation::SBC_IMM => SBC_IMM,
             Operation::SBC_MEM => SBC_MEM,
             Operation::SEC => SEC,
             Operation::SED => SED,
             Operation::SEI => SEI,
             Operation::STA => STA,
-            Operation::RTI => RTI,
-            Operation::RTS => RTS,
+
             Operation::UNKNOWN => NOT_IMPLEMENTED,
             Operation::INTERNAL_IRQ => INTERNAL_IRQ_FN,
             Operation::INTERNAL_NMI => INTERNAL_NMI_FN,
@@ -467,6 +499,81 @@ const LSR_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16
 
 const NOP: OperationFn = |_state: &mut State, _bus: &mut Databus, _operand: u16| {};
 
+const ORA_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+    state.acc |= operand as u8;
+
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
+};
+
+const ORA_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+    state.acc |= bus.read(operand);
+
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
+};
+
+const PHA: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
+    _push_stack(state, bus, state.acc);
+};
+
+const PHP: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
+    _push_stack(state, bus, state.get_status_ref().get_as_u8());
+};
+
+const PLA: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
+    state.acc = _pull_stack(state, bus);
+};
+
+const PLP: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
+    let status_u8 = _pull_stack(state, bus);
+    state.set_status(state::Status::from_u8(status_u8));
+};
+
+const ROL_ACC: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+    let overflow = (state.acc & 0x80) > 0;
+    state.acc <<= 1;
+    state.acc += state.get_status_field(state::SR_MASK_CARRY) as u8;
+
+    state.set_status_field(state::SR_MASK_CARRY, overflow);
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
+};
+
+const ROL_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+    let mut value = bus.read(operand);
+    let overflow = (value & 0x80) > 0;
+    value <<= 1;
+    value += state.get_status_field(state::SR_MASK_CARRY) as u8;
+    bus.write(operand, value);
+
+    state.set_status_field(state::SR_MASK_CARRY, overflow);
+    state.set_status_field(state::SR_MASK_NEGATIVE, value >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, value == 0);
+};
+
+const ROR_ACC: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+    let overflow = (state.acc & 1) > 0;
+    state.acc >>= 1;
+    state.acc += if state.get_status_field(state::SR_MASK_CARRY) { 128 } else { 0 };
+
+    state.set_status_field(state::SR_MASK_CARRY, overflow);
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
+};
+
+const ROR_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+    let mut value = bus.read(operand);
+    let overflow = (value & 1) > 0;
+    value >>= 1;
+    value += if state.get_status_field(state::SR_MASK_CARRY) { 128 } else { 0 };
+    bus.write(operand, value);
+
+    state.set_status_field(state::SR_MASK_CARRY, overflow);
+    state.set_status_field(state::SR_MASK_NEGATIVE, value >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, value == 0);
+};
+
 const SBC_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     _sbc(state, operand as u8);
 };
@@ -604,6 +711,11 @@ lazy_static! {
         opcodes[0xc8] = Opcode::new(Operation::INY, AddressingMode::Implied, 1, 2, false);
         opcodes[0xe8] = Opcode::new(Operation::INX, AddressingMode::Implied, 1, 2, false);
 
+        opcodes[0x4c] = Opcode::new(Operation::JMP, AddressingMode::Absolute, 3, 3, false);
+        opcodes[0x6c] = Opcode::new(Operation::JMP, AddressingMode::Indirect, 3, 5, false);
+
+        opcodes[0x20] = Opcode::new(Operation::JSR, AddressingMode::Absolute, 3, 6, false);
+
         opcodes[0xa9] = Opcode::new(Operation::LDA_IMM, AddressingMode::Immediate, 2, 2, false);
         opcodes[0xa5] = Opcode::new(Operation::LDA_MEM, AddressingMode::Zeropage, 2, 3, false);
         opcodes[0xb5] = Opcode::new(Operation::LDA_MEM, AddressingMode::ZeropageIndexedX, 2, 4, false);
@@ -633,10 +745,31 @@ lazy_static! {
 
         opcodes[0xea] = Opcode::new(Operation::NOP, AddressingMode::Implied, 1, 2, false);
 
-        opcodes[0x4c] = Opcode::new(Operation::JMP, AddressingMode::Absolute, 3, 3, false);
-        opcodes[0x6c] = Opcode::new(Operation::JMP, AddressingMode::Indirect, 3, 5, false);
+        opcodes[0x09] = Opcode::new(Operation::ORA_IMM, AddressingMode::Immediate, 2, 2, false);
+        opcodes[0x05] = Opcode::new(Operation::ORA_MEM, AddressingMode::Zeropage, 2, 3, false);
+        opcodes[0x15] = Opcode::new(Operation::ORA_MEM, AddressingMode::ZeropageIndexedX, 2, 4, false);
+        opcodes[0x0d] = Opcode::new(Operation::ORA_MEM, AddressingMode::Absolute, 3, 4, false);
+        opcodes[0x1d] = Opcode::new(Operation::ORA_MEM, AddressingMode::AbsoluteIndexedX, 3, 4, true);
+        opcodes[0x19] = Opcode::new(Operation::ORA_MEM, AddressingMode::AbsoluteIndexedY, 3, 4, true);
+        opcodes[0x01] = Opcode::new(Operation::ORA_MEM, AddressingMode::IndexedIndirectX, 2, 6, false);
+        opcodes[0x11] = Opcode::new(Operation::ORA_MEM, AddressingMode::IndirectIndexedY, 2, 5, true);
 
-        opcodes[0x20] = Opcode::new(Operation::JSR, AddressingMode::Absolute, 3, 6, false);
+        opcodes[0x48] = Opcode::new(Operation::PHA, AddressingMode::Implied, 1, 3, false);
+        opcodes[0x08] = Opcode::new(Operation::PHP, AddressingMode::Implied, 1, 3, false);
+        opcodes[0x68] = Opcode::new(Operation::PLA, AddressingMode::Implied, 1, 4, false);
+        opcodes[0x28] = Opcode::new(Operation::PLP, AddressingMode::Implied, 1, 4, false);
+
+        opcodes[0x2a] = Opcode::new(Operation::ROL_ACC, AddressingMode::Accumulator, 1, 2, false);
+        opcodes[0x26] = Opcode::new(Operation::ROL_MEM, AddressingMode::Zeropage, 2, 5, false);
+        opcodes[0x36] = Opcode::new(Operation::ROL_MEM, AddressingMode::ZeropageIndexedX, 2, 6, false);
+        opcodes[0x2e] = Opcode::new(Operation::ROL_MEM, AddressingMode::Absolute, 3, 6, false);
+        opcodes[0x3e] = Opcode::new(Operation::ROL_MEM, AddressingMode::AbsoluteIndexedX, 3, 7, false);
+
+        opcodes[0x6a] = Opcode::new(Operation::ROR_ACC, AddressingMode::Accumulator, 1, 2, false);
+        opcodes[0x66] = Opcode::new(Operation::ROR_MEM, AddressingMode::Zeropage, 2, 5, false);
+        opcodes[0x76] = Opcode::new(Operation::ROR_MEM, AddressingMode::ZeropageIndexedX, 2, 6, false);
+        opcodes[0x6e] = Opcode::new(Operation::ROR_MEM, AddressingMode::Absolute, 3, 6, false);
+        opcodes[0x7e] = Opcode::new(Operation::ROR_MEM, AddressingMode::AbsoluteIndexedX, 3, 7, false);
 
         opcodes[0xe9] = Opcode::new(Operation::SBC_IMM, AddressingMode::Immediate, 2, 2, false);
         opcodes[0xe5] = Opcode::new(Operation::SBC_MEM, AddressingMode::Zeropage, 2, 3, false);
