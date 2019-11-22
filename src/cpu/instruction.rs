@@ -42,12 +42,15 @@ enum Operation {
     INX,
     INY,
     JMP,
+    JSR,
     LDA_IMM,
     LDA_MEM,
     LDX_IMM,
     LDX_MEM,
     LDY_IMM,
     LDY_MEM,
+    LSR_ACC,
+    LSR_MEM,
     NOP,
     SBC_IMM,
     SBC_MEM,
@@ -56,6 +59,7 @@ enum Operation {
     SEI,
     STA,
     RTI,
+    RTS,
 
     UNKNOWN,
     INTERNAL_IRQ,
@@ -100,12 +104,15 @@ impl Operation {
             Operation::INX => "INX",
             Operation::INY => "INY",
             Operation::JMP => "JMP",
+            Operation::JSR => "JSR",
             Operation::LDA_IMM => "LDA",
             Operation::LDA_MEM => "LDA",
             Operation::LDX_IMM => "LDX",
             Operation::LDX_MEM => "LDX",
             Operation::LDY_IMM => "LDY",
             Operation::LDY_MEM => "LDY",
+            Operation::LSR_ACC => "LSR",
+            Operation::LSR_MEM => "LSR",
             Operation::NOP => "NOP",
             Operation::SBC_IMM => "SBC",
             Operation::SBC_MEM => "SBC",
@@ -114,6 +121,7 @@ impl Operation {
             Operation::SEI => "SEI",
             Operation::STA => "STA",
             Operation::RTI => "RTI",
+            Operation::RTS => "RTS",
             _ => "##"
         }
     }
@@ -160,7 +168,10 @@ impl Operation {
             Operation::LDX_MEM => LDX_MEM,
             Operation::LDY_IMM => LDY_IMM,
             Operation::LDY_MEM => LDY_MEM,
+            Operation::LSR_ACC => LSR_ACC,
+            Operation::LSR_MEM => LSR_MEM,
             Operation::JMP => JMP,
+            Operation::JSR => JSR,
             Operation::NOP => NOP,
             Operation::SBC_IMM => SBC_IMM,
             Operation::SBC_MEM => SBC_MEM,
@@ -169,6 +180,7 @@ impl Operation {
             Operation::SEI => SEI,
             Operation::STA => STA,
             Operation::RTI => RTI,
+            Operation::RTS => RTS,
             Operation::UNKNOWN => NOT_IMPLEMENTED,
             Operation::INTERNAL_IRQ => INTERNAL_IRQ_FN,
             Operation::INTERNAL_NMI => INTERNAL_NMI_FN,
@@ -386,6 +398,11 @@ const JMP: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     state.set_next_pc(operand);
 };
 
+const JSR: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+    _push_pc_to_stack(state, bus,state.get_next_pc());
+    state.set_next_pc(operand);
+};
+
 const LDA_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     state.acc = operand as u8;
 
@@ -428,6 +445,26 @@ const LDY_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16
     state.set_status_field(state::SR_MASK_ZERO, state.y == 0);
 };
 
+const LSR_ACC: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+    let overflow = (state.acc & 0x1) > 0;
+    state.acc >>= 1;
+
+    state.set_status_field(state::SR_MASK_CARRY, overflow);
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
+};
+
+const LSR_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+    let mut value = bus.read(operand);
+    let overflow = (value & 0x1) > 0;
+    value >>= 1;
+    bus.write(operand, value);
+
+    state.set_status_field(state::SR_MASK_CARRY, overflow);
+    state.set_status_field(state::SR_MASK_NEGATIVE, value >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, value == 0);
+};
+
 const NOP: OperationFn = |_state: &mut State, _bus: &mut Databus, _operand: u16| {};
 
 const SBC_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
@@ -461,11 +498,11 @@ const RTI: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
     status.set(state::SR_MASK_BREAK, false);
     state.set_status(status);
 
-    let pc_lo = _pull_stack(state, bus);
-    let pc_hi = _pull_stack(state, bus);
+    _pull_pc_from_stack(state, bus);
+};
 
-    let next_pc = ((pc_hi as u16) << 8) + pc_lo as u16;
-    state.set_next_pc(next_pc);
+const RTS: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
+    _pull_pc_from_stack(state, bus);
 };
 
 const INTERNAL_IRQ_FN: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
@@ -588,10 +625,18 @@ lazy_static! {
         opcodes[0xac] = Opcode::new(Operation::LDY_MEM, AddressingMode::Absolute, 3, 4, false);
         opcodes[0xbc] = Opcode::new(Operation::LDY_MEM, AddressingMode::AbsoluteIndexedX, 3, 4, true);
 
+        opcodes[0x4a] = Opcode::new(Operation::LSR_ACC, AddressingMode::Accumulator, 1, 2, false);
+        opcodes[0x46] = Opcode::new(Operation::LSR_MEM, AddressingMode::Zeropage, 2, 5, false);
+        opcodes[0x56] = Opcode::new(Operation::LSR_MEM, AddressingMode::ZeropageIndexedX, 2, 6, false);
+        opcodes[0x4e] = Opcode::new(Operation::LSR_MEM, AddressingMode::Absolute, 3, 6, false);
+        opcodes[0x5e] = Opcode::new(Operation::LSR_MEM, AddressingMode::AbsoluteIndexedX, 3, 7, false);
+
         opcodes[0xea] = Opcode::new(Operation::NOP, AddressingMode::Implied, 1, 2, false);
 
         opcodes[0x4c] = Opcode::new(Operation::JMP, AddressingMode::Absolute, 3, 3, false);
         opcodes[0x6c] = Opcode::new(Operation::JMP, AddressingMode::Indirect, 3, 5, false);
+
+        opcodes[0x20] = Opcode::new(Operation::JSR, AddressingMode::Absolute, 3, 6, false);
 
         opcodes[0xe9] = Opcode::new(Operation::SBC_IMM, AddressingMode::Immediate, 2, 2, false);
         opcodes[0xe5] = Opcode::new(Operation::SBC_MEM, AddressingMode::Zeropage, 2, 3, false);
@@ -615,6 +660,8 @@ lazy_static! {
         opcodes[0x91] = Opcode::new(Operation::STA, AddressingMode::IndirectIndexedY, 2, 6, false);
 
         opcodes[0x40] = Opcode::new(Operation::RTI, AddressingMode::Implied, 1, 6, false);
+
+        opcodes[0x60] = Opcode::new(Operation::RTS, AddressingMode::Implied, 1, 6, false);
 
         opcodes
     };
@@ -821,11 +868,7 @@ fn _compare(state: &mut State, mem: u8, operand: u8) {
 }
 
 fn _handle_interrupt(state: &mut State, bus: &mut Databus, interrupt_vector: u16, b_flag: bool) {
-    let pc_hi = (state.get_next_pc() >> 8) as u8;
-    let pc_lo = (state.get_next_pc() & 0xff) as u8;
-
-    _push_stack(state, bus, pc_hi);
-    _push_stack(state, bus, pc_lo);
+    _push_pc_to_stack(state, bus,state.get_next_pc());
 
     let mut status = *state.get_status_ref();
     status.set(state::SR_MASK_BREAK, b_flag);
@@ -833,6 +876,22 @@ fn _handle_interrupt(state: &mut State, bus: &mut Databus, interrupt_vector: u16
 
     state.set_status_field(state::SR_MASK_INTERRUPT, true);
     state.set_next_pc(bus.read_u16(interrupt_vector));
+}
+
+fn _push_pc_to_stack(state: &mut State, bus: &mut Databus, pc: u16) {
+    let pc_hi = (pc >> 8) as u8;
+    let pc_lo = (pc & 0xff) as u8;
+
+    _push_stack(state, bus, pc_hi);
+    _push_stack(state, bus, pc_lo);
+}
+
+fn _pull_pc_from_stack(state: &mut State, bus: &Databus) {
+    let pc_lo = _pull_stack(state, bus);
+    let pc_hi = _pull_stack(state, bus);
+
+    let next_pc = ((pc_hi as u16) << 8) + pc_lo as u16;
+    state.set_next_pc(next_pc);
 }
 
 fn _push_stack(state: &mut State, bus: &mut Databus, data: u8) {

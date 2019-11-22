@@ -1,7 +1,5 @@
 extern crate sdl2;
 
-use std::path::Path;
-
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 
@@ -100,6 +98,7 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
     let mut event_pump = sdl_context.event_pump()?;
     let timer = sdl_context.timer()?;
     let mut framerate = FRAMERATE;
+    let mut running = false;
 
     'mainloop: loop {
         let time = timer.performance_counter();
@@ -109,6 +108,9 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
                 Event::KeyDown { keycode: Some(Keycode::Escape), .. } |
                 Event::Quit { .. } => break 'mainloop,
                 Event::KeyDown { keycode: Some(Keycode::Space), .. } => {
+                    running = !running;
+                }
+                Event::KeyDown { keycode: Some(Keycode::Period), .. } => {
                     nes.tick();
                 }
                 Event::KeyDown { keycode: Some(Keycode::I), repeat: false, .. } => {
@@ -127,7 +129,10 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
             }
         }
 
-        //nes.tick();
+        if running {
+            nes.tick();
+        }
+
         nes.set_actual_framerate(framerate);
         render(&mut canvas, &mut windows, nes)?;
 
