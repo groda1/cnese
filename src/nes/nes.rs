@@ -1,5 +1,6 @@
 use crate::cpu::cpu::Cpu;
 use crate::cpu::databus::Databus;
+use crate::nes::cartridge::cartridge::{create_cartridge_from_ines, create_cartridge_from_raw};
 
 pub struct NES {
     cpu: Cpu,
@@ -21,6 +22,12 @@ impl NES {
 
     pub fn tick(&mut self) {
         self.cpu.tick(&mut self.databus);
+        self.cpu.tick(&mut self.databus);
+        self.cpu.tick(&mut self.databus);
+        self.cpu.tick(&mut self.databus);
+        self.cpu.tick(&mut self.databus);
+        self.cpu.tick(&mut self.databus);
+
     }
 
     pub fn get_databus(&self) -> &Databus {
@@ -35,9 +42,15 @@ impl NES {
         self.cpu.reset(&self.databus);
     }
 
-    pub fn load_rom(&mut self, rom_data: &[u8]) {
-        self.databus.load_rom(rom_data);
+    pub fn load_frogrom(&mut self, rom_data: &[u8]) -> Result<(), &str> {
+        let cartridge = create_cartridge_from_raw(rom_data)?;
+
+        self.databus.load_cartridge(cartridge);
+
+        Ok(())
     }
+
+
 
     pub fn set_irq_lo(&mut self) { self.cpu.set_irq_lo(); }
     pub fn set_irq_hi(&mut self) { self.cpu.set_irq_hi(); }

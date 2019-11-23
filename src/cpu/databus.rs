@@ -1,7 +1,12 @@
+use super::super::nes::cartridge::cartridge::Cartridge;
+
+
 const DATABUS_SIZE: usize = std::u16::MAX as usize + 1;
 
-pub const CARTRIDGE_SPACE_OFFSET: usize = 0x4020;
 
+pub const RAM_SIZE: usize = 0x0800;
+
+pub const CARTRIDGE_SPACE_OFFSET: u16 = 0x4020;
 /*
 Address range       Size        Device
 $0000-$07FF         $0800       2KB internal RAM
@@ -23,20 +28,45 @@ $FFFE, $FFFF ... IRQ (Interrupt Request) vector
 */
 
 
-
+//TODO fix the stupid magic number ranges
 pub struct Databus {
-    data: Vec<u8>
+    ram: Box<[u8; RAM_SIZE]>,
+    cartridge: Option<Cartridge>,
 }
 
 impl Databus {
     pub fn new() -> Databus {
+        let mut ram = [0 as u8; RAM_SIZE];
+
         Databus {
-            data: vec![0; DATABUS_SIZE]
+            ram: Box::new(ram),
+            cartridge: None,
         }
     }
 
     pub fn read(&self, address: u16) -> u8 {
-        self.data[address as usize]
+        match address {
+            0..=0x1fff => {
+                self.ram[address as usize % RAM_SIZE]
+            }
+            0x4020..=0xFFFF => {
+                self.cartridge.as_ref().unwrap().read(address)
+            }
+            _ => unreachable!()
+        }
+    }
+
+    pub fn read_slice(&self, address: u16, len: usize) -> &[u8] {
+        match address {
+            0..=0x1fff => {
+                let index = address as usize;
+                &self.ram[index..index + len]
+            }
+            0x4020..=0xFFFF => {
+                self.cartridge.as_ref().unwrap().read_slice(address, len)
+            }
+            _ => unreachable!()
+        }
     }
 
     pub fn read_u16(&self, address: u16) -> u16 {
@@ -46,22 +76,27 @@ impl Databus {
         ((hi as u16) << 8) + lo as u16
     }
 
-    pub fn read_slice(&self, address: u16, len: usize) -> &[u8] {
-        let index = address as usize;
-
-        &(self.data)[index..index + len]
-    }
 
     pub fn write(&mut self, address: u16, data: u8) {
-        self.data[address as usize] = data;
+        match address {
+            0..=0x1fff => {
+                self.ram[address as usize % RAM_SIZE] = data;
+            }
+            0x4020..=0xFFFF => {
+                self.cartridge.as_mut().unwrap().write(address, data)
+            }
+
+            _ => unreachable!()
+        }
     }
 
-    pub fn load_rom(&mut self, rom_data: &[u8]) {
-        self.data[CARTRIDGE_SPACE_OFFSET..CARTRIDGE_SPACE_OFFSET + rom_data.len()]
-            .copy_from_slice(rom_data);
+
+    pub fn load_cartridge(&mut self, cartridge: Cartridge) {
+        self.cartridge = Some(cartridge);
     }
 
+    // TODO this needs to be removed
     pub fn get_cartridge(&self) -> &[u8] {
-        &(self.data)[CARTRIDGE_SPACE_OFFSET..0xFFFF]
+        self.read_slice(CARTRIDGE_SPACE_OFFSET, 0xFFFF - CARTRIDGE_SPACE_OFFSET as usize)
     }
 }

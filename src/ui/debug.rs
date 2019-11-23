@@ -320,14 +320,14 @@ impl InstructionWindow {
         let mut window = InstructionWindow {
             instructions,
             instruction_offset: 0,
-            instruction_rom_offset: databus::CARTRIDGE_SPACE_OFFSET,
+            instruction_rom_offset: databus::CARTRIDGE_SPACE_OFFSET as usize,
             addr_to_instr_index: HashMap::new(),
             instr_to_addr: HashMap::new(),
             height,
         };
 
         let mut i = 0;
-        let mut addr = databus::CARTRIDGE_SPACE_OFFSET;
+        let mut addr = databus::CARTRIDGE_SPACE_OFFSET as usize;
 
         let instructions = &window.instructions;
 
