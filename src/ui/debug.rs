@@ -254,7 +254,7 @@ impl<'a> RenderableWindow for RegisterWindow {
                           secondary_font,
                           x + FRAME_PADDING,
                           y + FRAME_PADDING + ROW_OFFSET + EXTRA_ROW_OFFSET,
-                          format!("   ${:04X}    ${:02X}", state.get_pc(), state.get_sp()).as_str(),
+                          format!("   ${:04X}    ${:02X}", state.get_pc(), state.stack_pointer).as_str(),
         )?;
 
 

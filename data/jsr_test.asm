@@ -17,6 +17,7 @@ loop:
 
     org $8000
 subroutine:
+    TYA
     LDX #$FF
 loop1:
     STA $00,X

@@ -70,6 +70,14 @@ enum Operation {
     SED,
     SEI,
     STA,
+    STX,
+    STY,
+    TAX,
+    TAY,
+    TSX,
+    TXA,
+    TXS,
+    TYA,
 
     UNKNOWN,
     INTERNAL_IRQ,
@@ -142,6 +150,14 @@ impl Operation {
             Operation::SED => "SED",
             Operation::SEI => "SEI",
             Operation::STA => "STA",
+            Operation::STX => "STX",
+            Operation::STY => "STY",
+            Operation::TAX => "TAX",
+            Operation::TAY => "TAY",
+            Operation::TSX => "TSX",
+            Operation::TXA => "TXA",
+            Operation::TXS => "TXS",
+            Operation::TYA => "TYA",
 
             _ => "##"
         }
@@ -212,6 +228,14 @@ impl Operation {
             Operation::SED => SED,
             Operation::SEI => SEI,
             Operation::STA => STA,
+            Operation::STX => STX,
+            Operation::STY => STY,
+            Operation::TAX => TAX,
+            Operation::TAY => TAY,
+            Operation::TSX => TSX,
+            Operation::TXA => TXA,
+            Operation::TXS => TXS,
+            Operation::TYA => TYA,
 
             Operation::UNKNOWN => NOT_IMPLEMENTED,
             Operation::INTERNAL_IRQ => INTERNAL_IRQ_FN,
@@ -574,6 +598,20 @@ const ROR_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16
     state.set_status_field(state::SR_MASK_ZERO, value == 0);
 };
 
+const RTI: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
+    let status_u8 = _pull_stack(state, bus);
+
+    let mut status = state::Status::from_u8(status_u8);
+    status.set(state::SR_MASK_BREAK, false);
+    state.set_status(status);
+
+    _pull_pc_from_stack(state, bus);
+};
+
+const RTS: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
+    _pull_pc_from_stack(state, bus);
+};
+
 const SBC_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
     _sbc(state, operand as u8);
 };
@@ -598,18 +636,51 @@ const STA: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
     bus.write(operand, state.acc);
 };
 
-const RTI: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
-    let status_u8 = _pull_stack(state, bus);
-
-    let mut status = state::Status::from_u8(status_u8);
-    status.set(state::SR_MASK_BREAK, false);
-    state.set_status(status);
-
-    _pull_pc_from_stack(state, bus);
+const STX: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+    bus.write(operand, state.x);
 };
 
-const RTS: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
-    _pull_pc_from_stack(state, bus);
+const STY: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+    bus.write(operand, state.y);
+};
+
+const TAX: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+    state.x = state.acc;
+
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.x >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.x == 0);
+};
+
+const TAY: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+    state.y = state.acc;
+
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.y >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.y == 0);
+};
+
+const TSX: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+    state.x = state.stack_pointer;
+
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.x >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.x == 0);
+};
+
+const TXA: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+    state.acc = state.x;
+
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
+};
+
+const TXS: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+    state.stack_pointer = state.x;
+};
+
+const TYA: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+    state.acc = state.y;
+
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
 };
 
 const INTERNAL_IRQ_FN: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
@@ -771,6 +842,9 @@ lazy_static! {
         opcodes[0x6e] = Opcode::new(Operation::ROR_MEM, AddressingMode::Absolute, 3, 6, false);
         opcodes[0x7e] = Opcode::new(Operation::ROR_MEM, AddressingMode::AbsoluteIndexedX, 3, 7, false);
 
+        opcodes[0x40] = Opcode::new(Operation::RTI, AddressingMode::Implied, 1, 6, false);
+        opcodes[0x60] = Opcode::new(Operation::RTS, AddressingMode::Implied, 1, 6, false);
+
         opcodes[0xe9] = Opcode::new(Operation::SBC_IMM, AddressingMode::Immediate, 2, 2, false);
         opcodes[0xe5] = Opcode::new(Operation::SBC_MEM, AddressingMode::Zeropage, 2, 3, false);
         opcodes[0xf5] = Opcode::new(Operation::SBC_MEM, AddressingMode::ZeropageIndexedX, 2, 4, false);
@@ -792,9 +866,20 @@ lazy_static! {
         opcodes[0x81] = Opcode::new(Operation::STA, AddressingMode::IndexedIndirectX, 2, 6, false);
         opcodes[0x91] = Opcode::new(Operation::STA, AddressingMode::IndirectIndexedY, 2, 6, false);
 
-        opcodes[0x40] = Opcode::new(Operation::RTI, AddressingMode::Implied, 1, 6, false);
+        opcodes[0x86] = Opcode::new(Operation::STX, AddressingMode::Zeropage, 2, 3, false);
+        opcodes[0x96] = Opcode::new(Operation::STX, AddressingMode::ZeropageIndexedY, 2, 4, false);
+        opcodes[0x8e] = Opcode::new(Operation::STX, AddressingMode::Absolute, 3, 4, false);
 
-        opcodes[0x60] = Opcode::new(Operation::RTS, AddressingMode::Implied, 1, 6, false);
+        opcodes[0x84] = Opcode::new(Operation::STY, AddressingMode::Zeropage, 2, 3, false);
+        opcodes[0x94] = Opcode::new(Operation::STY, AddressingMode::ZeropageIndexedX, 2, 4, false);
+        opcodes[0x8c] = Opcode::new(Operation::STY, AddressingMode::Absolute, 3, 4, false);
+
+        opcodes[0xaa] = Opcode::new(Operation::TAX, AddressingMode::Implied, 1, 2, false);
+        opcodes[0xa8] = Opcode::new(Operation::TAY, AddressingMode::Implied, 1, 2, false);
+        opcodes[0xba] = Opcode::new(Operation::TSX, AddressingMode::Implied, 1, 2, false);
+        opcodes[0x8a] = Opcode::new(Operation::TXA, AddressingMode::Implied, 1, 2, false);
+        opcodes[0x9a] = Opcode::new(Operation::TXS, AddressingMode::Implied, 1, 2, false);
+        opcodes[0x98] = Opcode::new(Operation::TYA, AddressingMode::Implied, 1, 2, false);
 
         opcodes
     };
@@ -1028,13 +1113,13 @@ fn _pull_pc_from_stack(state: &mut State, bus: &Databus) {
 }
 
 fn _push_stack(state: &mut State, bus: &mut Databus, data: u8) {
-    bus.write(cpu::STACK_OFFSET + state.get_sp() as u16, data);
+    bus.write(cpu::STACK_OFFSET + state.stack_pointer as u16, data);
     state.dec_sp();
 }
 
 fn _pull_stack(state: &mut State, bus: &Databus) -> u8 {
     state.inc_sp();
-    let data = bus.read(cpu::STACK_OFFSET + state.get_sp() as u16);
+    let data = bus.read(cpu::STACK_OFFSET + state.stack_pointer as u16);
 
     data
 }

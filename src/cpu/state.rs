@@ -37,11 +37,11 @@ pub struct State {
     pub acc: u8,
     pub x: u8,
     pub y: u8,
+    pub stack_pointer: u8,
 
     program_counter: u16,
     next_pc: u16,
 
-    stack_pointer: u8,
     status: Status,
 }
 
@@ -90,9 +90,6 @@ impl State {
         self.program_counter
     }
 
-    pub fn get_sp(&self) -> u8 {
-        self.stack_pointer
-    }
     pub fn dec_sp(&mut self) { self.stack_pointer = self.stack_pointer.wrapping_sub(1); }
     pub fn inc_sp(&mut self) { self.stack_pointer = self.stack_pointer.wrapping_add(1); }
 
