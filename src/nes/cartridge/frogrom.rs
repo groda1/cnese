@@ -25,9 +25,8 @@ impl CartridgeTrait for FrogRom {
     }
 
     fn read_slice(&self, address: u16, len: usize) -> &[u8] {
-
         let addr = (address - OFFSET) as usize;
-        &self.rom[addr..addr+len]
+        &self.rom[addr..addr + len]
     }
 
     fn write(&mut self, address: u16, data: u8) {

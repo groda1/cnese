@@ -950,7 +950,7 @@ impl Instruction {
         let evalued_operand = self.opcode.mode.eval(state, bus, self.operand);
         self.opcode.operation.get_fn()(state, bus, evalued_operand);
     }
-    pub fn get_cycle_cost(&self, state: &State, bus: &Databus) -> u8 {
+    pub fn calculate_cycle_cost(&self, state: &State, bus: &Databus) -> u8 {
         let mut cost = self.opcode.cycles;
 
         if self.opcode.is_branch() {

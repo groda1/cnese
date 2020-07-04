@@ -13,7 +13,11 @@ pub struct Cpu {
     state: State,
 
     next_instruction: Instruction,
-    unspent_cycles: u32,
+    next_instruction_cost: u8,
+    unspent_cycles: u8,
+
+    cycle_count: u32,
+    instruction_count: u32,
 
     irq: bool,
     nmi: bool,
@@ -25,7 +29,11 @@ impl Cpu {
         Cpu {
             state: State::new(),
             next_instruction: instruction::DUMMY_INSTRUCTION,
+            next_instruction_cost: 0,
             unspent_cycles: 0,
+
+            cycle_count: 0,
+            instruction_count: 0,
 
             irq: true,
             nmi: true,
@@ -55,27 +63,36 @@ impl Cpu {
 
     pub fn tick(&mut self, bus: &mut Databus) {
         self.unspent_cycles += 1;
+        self.cycle_count += 1;
 
-        // TODO CALCLATE COST ONLY ONCE
-        let cycle_cost = self.next_instruction.get_cycle_cost(
-            self.get_state(), bus) as u32;
+        if self.unspent_cycles >= self.next_instruction_cost {
+            self.unspent_cycles -= self.next_instruction_cost;
 
-        if self.unspent_cycles >= cycle_cost {
-            self.unspent_cycles -= cycle_cost;
+            self._execute_next_instruction(bus);
 
-            let instruction = &self.next_instruction;
-            self.state.set_next_pc(self.state.calculate_relative_pc(instruction.get_size() as i8));
-
-            instruction.execute(&mut self.state, bus);
-
-            self.state.update_pc();
-
-            self._load_next_instruction(bus);
         }
     }
 
+    pub fn tick_instruction(&mut self, bus: &mut Databus) {
+        self.cycle_count += self.next_instruction_cost as u32;
+        self._execute_next_instruction(bus);
+    }
 
     pub fn get_state(&self) -> &State { &self.state }
+    pub fn get_cycle_count(&self) -> u32 { self.cycle_count }
+    pub fn get_instruction_count(&self) -> u32 { self.instruction_count }
+
+    pub fn _execute_next_instruction(&mut self, bus: &mut Databus) {
+        let instruction = &self.next_instruction;
+
+        self.state.set_next_pc(self.state.calculate_relative_pc(instruction.get_size() as i8));
+        instruction.execute(&mut self.state, bus);
+        self.state.update_pc();
+
+        self._load_next_instruction(bus);
+
+        self.instruction_count += 1;
+    }
 
     pub fn _load_next_instruction(&mut self, bus: &Databus) {
         if !self.nmi && self.nmi_seen_hi { // NMI
@@ -87,6 +104,9 @@ impl Cpu {
             let next_instruction_binary = bus.read_slice(self.state.get_pc(), 3);
             self.next_instruction = instruction::decode_instruction(next_instruction_binary);
         }
+
+        self.next_instruction_cost = self.next_instruction.calculate_cycle_cost(self.get_state(), bus);
     }
+
 }
 

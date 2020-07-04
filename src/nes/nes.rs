@@ -22,12 +22,10 @@ impl NES {
 
     pub fn tick(&mut self) {
         self.cpu.tick(&mut self.databus);
-        self.cpu.tick(&mut self.databus);
-        self.cpu.tick(&mut self.databus);
-        self.cpu.tick(&mut self.databus);
-        self.cpu.tick(&mut self.databus);
-        self.cpu.tick(&mut self.databus);
+    }
 
+    pub fn tick_cpu_instruction(&mut self) {
+        self.cpu.tick_instruction(&mut self.databus);
     }
 
     pub fn get_databus(&self) -> &Databus {

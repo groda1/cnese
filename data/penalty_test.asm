@@ -3,13 +3,15 @@
 
 start:
     NOP
-    LDA $2030,X
+    LDA $420,X
     LDX #$FF
-    LDA $2030,X
+    LDA $420,X
 
     JMP start
 
 
     org $FFFC
     .word start
+	org $FFFE
+	.word start
 

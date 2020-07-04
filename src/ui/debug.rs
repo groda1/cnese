@@ -129,6 +129,12 @@ impl<'a> RenderableWindow for FramerateCounter {
         util::render_text_small(canvas, font, x, y,
                                 format!("FPS: {}", nes.get_actual_framerate()).as_str(),
         )?;
+        util::render_text_small(canvas, font, x + 90, y,
+                                format!("Cycles: {}", nes.get_cpu().get_cycle_count()).as_str(),
+        )?;
+        util::render_text_small(canvas, font, x + 200, y,
+                                format!("Instructions: {}", nes.get_cpu().get_instruction_count()).as_str(),
+        )?;
 
         Ok(())
     }

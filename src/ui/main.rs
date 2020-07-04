@@ -110,8 +110,11 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
                 Event::KeyDown { keycode: Some(Keycode::Space), .. } => {
                     running = !running;
                 }
-                Event::KeyDown { keycode: Some(Keycode::Period), .. } => {
+                Event::KeyDown { keycode: Some(Keycode::Comma), .. } => {
                     nes.tick();
+                }
+                Event::KeyDown { keycode: Some(Keycode::Period), .. } => {
+                    nes.tick_cpu_instruction();
                 }
                 Event::KeyDown { keycode: Some(Keycode::I), repeat: false, .. } => {
                     nes.set_irq_lo();
