@@ -36,7 +36,7 @@ pub struct Databus {
 
 impl Databus {
     pub fn new() -> Databus {
-        let mut ram = [0 as u8; RAM_SIZE];
+        let ram = [0 as u8; RAM_SIZE];
 
         Databus {
             ram: Box::new(ram),

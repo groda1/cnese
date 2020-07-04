@@ -41,6 +41,10 @@ impl NES {
     }
 
     pub fn load_frogrom(&mut self, rom_data: &[u8]) -> Result<(), &str> {
+        #[cfg(debug_assertions)] {
+            println!("Loading FrogROM");
+        }
+
         let cartridge = create_cartridge_from_raw(rom_data)?;
 
         self.databus.load_cartridge(cartridge);

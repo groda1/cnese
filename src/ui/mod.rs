@@ -1,4 +1,4 @@
 pub mod main;
-mod debug;
+mod window;
 mod util;
 mod font;

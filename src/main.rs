@@ -11,6 +11,8 @@ mod ui;
 
 
 fn main() {
+    println!("CNESE");
+
     let args: Vec<String> = std::env::args().collect();
     let path = &args[1];
 

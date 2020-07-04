@@ -15,6 +15,7 @@ pub fn render_text(canvas: &mut Canvas<Window>,
                    x: i32,
                    y: i32,
                    text: &str) -> Result<(), String> {
+
     _render_text(canvas, font, x, y, text, 2)?;
 
     Ok(())

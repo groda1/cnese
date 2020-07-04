@@ -6,14 +6,13 @@ use sdl2::keyboard::Keycode;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
 use sdl2::pixels::Color;
+use std::time::Duration;
 
-use super::debug;
-use super::debug::DebugWindow;
+use crate::ui::window::window;
+use super::window::window::CneseWindow;
 
 use crate::nes::nes::NES;
 use crate::cpu::instruction;
-
-use std::time::Duration;
 
 static SCREEN_WIDTH: u32 = 1250;
 static SCREEN_HEIGHT: u32 = 600;
@@ -26,7 +25,7 @@ static TEXT_COLOR: (u8, u8, u8, u8) = (255, 255, 255, 255);
 static TEXT_COLOR_DARK: (u8, u8, u8, u8) = (175, 175, 175, 175);
 
 fn render(canvas: &mut Canvas<Window>,
-          windows: &mut Vec<&mut DebugWindow>,
+          windows: &mut Vec<&mut CneseWindow>,
           nes: &NES) -> Result<(), String> {
 
     canvas.set_draw_color(Color::from(BACKGROUND_COLOR));
@@ -65,32 +64,32 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
 
     let mut windows = Vec::new();
 
-    let mut instr_window = debug::create_instruction_window(&font, &dark_font, 22, deassembled_instructions);
+    let mut instr_window = window::create_instruction_window(&font, &dark_font, 22, deassembled_instructions);
     instr_window.set_pos(20, 130);
     instr_window.set_active(true);
     windows.push(&mut instr_window);
 
-    let mut register_window = debug::create_register_window(&font, &dark_font);
+    let mut register_window = window::create_register_window(&font, &dark_font);
     register_window.set_pos(20, 20);
     register_window.set_active(true);
     windows.push(&mut register_window);
 
-    let mut zeropage_window = debug::create_memory_window(&font, &dark_font, 0, 256, 16);
+    let mut zeropage_window = window::create_memory_window(&font, &dark_font, 0, 256, 16);
     zeropage_window.set_pos(330, 20);
     zeropage_window.set_active(true);
     windows.push(&mut zeropage_window);
 
-    let mut stack_window = debug::create_memory_window(&font, &dark_font, 0x100, 256, 16);
+    let mut stack_window = window::create_memory_window(&font, &dark_font, 0x100, 256, 16);
     stack_window.set_pos(330, 210);
     stack_window.set_active(true);
     windows.push(&mut stack_window);
 
-    let mut ram_window = debug::create_memory_window(&font, &dark_font, 0x200, 0x600, 48);
+    let mut ram_window = window::create_memory_window(&font, &dark_font, 0x200, 0x600, 48);
     ram_window.set_pos(780, 20);
     ram_window.set_active(true);
     windows.push(&mut ram_window);
 
-    let mut framerate_counter = debug::create_framerate_window(&font, &dark_font);
+    let mut framerate_counter = window::create_framerate_window(&font);
     framerate_counter.set_pos(5, 5);
     framerate_counter.set_active(true);
     windows.push(&mut framerate_counter);
