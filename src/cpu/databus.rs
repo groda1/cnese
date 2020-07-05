@@ -57,19 +57,6 @@ impl Databus {
         }
     }
 
-    // pub fn read_slice(&self, address: u16, len: usize) -> &[u8] {
-    //     match address {
-    //         INTERNAL_RAM_START..=INTERNAL_RAM_END => {
-    //             let index = address as usize;
-    //             &self.ram[index..index + len]
-    //         }
-    //         CARTRIDGE_SPACE_START..=END => {
-    //             self.cartridge.as_ref().unwrap().read_prg_slice(address, len)
-    //         }
-    //         _ => unreachable!()
-    //     }
-    // }
-
     pub fn read_u16(&self, address: u16) -> u16 {
         let lo = self.read(address);
         let hi = self.read(address + 1);
