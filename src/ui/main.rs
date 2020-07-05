@@ -17,7 +17,7 @@ use crate::cpu::instruction;
 static SCREEN_WIDTH: u32 = 1250;
 static SCREEN_HEIGHT: u32 = 600;
 
-static FRAMERATE: u32 = 120;
+static FRAMERATE: u32 = 60;
 static FRAMETIME_NANO: u64 = 1_000_000_000 / FRAMERATE as u64;
 
 static BACKGROUND_COLOR: (u8, u8, u8, u8) = (128, 128, 128, 255);
@@ -41,7 +41,7 @@ fn render(canvas: &mut Canvas<Window>,
 }
 
 pub fn run(nes: &mut NES) -> Result<(), String> {
-    let deassembled_instructions = instruction::deassemble(nes.get_databus().get_cartridge());
+    let deassembled_instructions = instruction::deassemble(nes.get_databus().get_cartridge_prg());
 
     let font_rwops = sdl2::rwops::RWops::from_bytes(include_bytes!("resources/nesfont.fon"))?;
 

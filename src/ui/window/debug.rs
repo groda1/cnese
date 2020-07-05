@@ -10,7 +10,6 @@ use crate::ui::font::Font;
 use crate::nes::nes::NES;
 
 use super::super::util;
-use super::window::CneseWindow;
 use super::window::RenderableWindow;
 
 static FRAME_BORDER_COLOR: (u8, u8, u8, u8) = (255, 255, 255, 255);
@@ -49,14 +48,14 @@ impl<'a> InstructionWindow<'a> {
             secondary_font,
             instructions,
             instruction_offset: 0,
-            instruction_rom_offset: databus::CARTRIDGE_SPACE_OFFSET as usize,
+            instruction_rom_offset: databus::CARTRIDGE_SPACE_START as usize,
             addr_to_instr_index: HashMap::new(),
             instr_to_addr: HashMap::new(),
             height,
         };
 
         let mut i = 0;
-        let mut addr = databus::CARTRIDGE_SPACE_OFFSET as usize;
+        let mut addr = databus::CARTRIDGE_SPACE_START as usize;
 
         let instructions = &window.instructions;
 
@@ -177,7 +176,7 @@ impl<'a> RenderableWindow for FramerateCounter<'a> {
 pub struct MemoryWindow<'a> {
     font: &'a Font<'a>,
     secondary_font: &'a Font<'a>,
-    scroll_offset: usize,
+    // scroll_offset: usize,
     data_start: u16,
     data_size: usize,
     height: usize,
@@ -196,7 +195,7 @@ impl<'a> MemoryWindow<'a> {
             data_start,
             data_size,
             height,
-            scroll_offset: 0,
+            // scroll_offset: 0,
         };
 
         window

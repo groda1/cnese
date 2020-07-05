@@ -59,6 +59,10 @@ impl Cpu {
         self._load_next_instruction(bus);
 
         self.unspent_cycles = 0;
+
+        #[cfg(debug_assertions)] {
+            println!("Reset NES, PC=${:x}", pc);
+        }
     }
 
     pub fn tick(&mut self, bus: &mut Databus) {

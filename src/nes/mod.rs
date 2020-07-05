@@ -1,4 +1,3 @@
 pub mod nes;
 pub mod cartridge;
-
-mod ines;
+pub mod ines;

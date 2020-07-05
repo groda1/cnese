@@ -41,39 +41,54 @@ const FLAGS_6_OFFSET: usize = 6;
 const FLAGS_6_MIRRORING_MASK: u8 = 1;
 const FLAGS_6_BATTERY_MASK: u8 = 2;
 const FLAGS_6_TRAINER_MASK: u8 = 4;
-const FLAGS_6_IGNORE_MIRRORING__MASK: u8 = 8;
+const FLAGS_6_IGNORE_MIRRORING_MASK: u8 = 8;
 
 const FLAGS_7_OFFSET: usize = 7;
-const FLAGS_8_OFFSET: usize = 8;
-const FLAGS_9_OFFSET: usize = 9;
+// const FLAGS_8_OFFSET: usize = 8;
+// const FLAGS_9_OFFSET: usize = 9;
 
-pub fn open_ines(path: &String) -> Result<(Cartridge), &str> {
+
+pub fn open_ines(path: &String) -> Result<(Cartridge), String> {
     let file_data = file::read_file(path);
-
 
     let header = &file_data[0..HEADER_SIZE];
 
     let ines_prefix = &header[0..4];
     if !ines_prefix.eq(&INES_PREFIX) {
-        return Err("Not a valid iNES file");
+        return Err(format!("Not a valid iNES file"));
     }
 
     let prg_size = header[PRG_ROM_CHUNK_COUNT_OFFSET];
     let chr_size = header[CHR_ROM_SIZE_OFFSET];
-    let mapper = (header[FLAGS_7_OFFSET] & 0xf0) + (header[FLAGS_6_OFFSET] >> 4);
-
+    let mirroring= header[FLAGS_6_OFFSET] & FLAGS_6_MIRRORING_MASK;
     let battery_ram = (header[FLAGS_6_OFFSET] & FLAGS_6_BATTERY_MASK) > 0;
     let trainer_present = (header[FLAGS_6_OFFSET] & FLAGS_6_TRAINER_MASK) > 0;
+    let ignore_mirroring = header[FLAGS_6_OFFSET] & FLAGS_6_IGNORE_MIRRORING_MASK > 0;
+    let mapper = (header[FLAGS_7_OFFSET] & 0xF0) + (header[FLAGS_6_OFFSET] >> 4);
 
     let mut offset = if trainer_present { TRAINER_SIZE + HEADER_SIZE } else { HEADER_SIZE };
     let mut prg_rom_vec = Vec::new();
 
-    for i in 0..prg_size {
+    for _i in 0..prg_size {
         prg_rom_vec.push(&file_data[offset..offset + PRG_ROM_CHUNK_SIZE]);
         offset += PRG_ROM_CHUNK_SIZE;
     }
 
-    println!("ines prg={} chr={} mapper={} battery={} trainer={}", prg_size, chr_size, mapper, battery_ram, trainer_present);
+    #[cfg(debug_assertions)] {
+        println!("Parsed iNES: {}", path);
+        println!("===========================");
+
+        println!("PRG size: {} kb", prg_size as usize * PRG_ROM_CHUNK_SIZE);
+        println!("CHR size: {}", chr_size as usize * CHR_ROM_CHUNK_SIZE);
+
+        println!("Mirroring: {}", mirroring);
+        println!("Battery present: {}", battery_ram);
+        println!("Trainer present: {}", trainer_present);
+        println!("Ignore mirroring: {}", ignore_mirroring);
+        println!("Mapper: {}", mapper);
+        println!("===========================");
+
+    }
 
     let cartridge = cartridge::create_cartridge_from_ines(mapper, prg_rom_vec)?;
 

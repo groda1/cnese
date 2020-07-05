@@ -1,12 +1,14 @@
 use super::super::nes::cartridge::cartridge::Cartridge;
 
+pub const CARTRIDGE_SPACE_START: u16 = 0x4020;
 
-const DATABUS_SIZE: usize = std::u16::MAX as usize + 1;
+const INTERNAL_RAM_START: u16 = 0x0000;
+const INTERNAL_RAM_END: u16 = 0x1FFF;
+const RAM_SIZE: usize = 0x0800;
+
+const END: u16 = 0xFFFF;
 
 
-pub const RAM_SIZE: usize = 0x0800;
-
-pub const CARTRIDGE_SPACE_OFFSET: u16 = 0x4020;
 /*
 Address range       Size        Device
 $0000-$07FF         $0800       2KB internal RAM
@@ -28,7 +30,6 @@ $FFFE, $FFFF ... IRQ (Interrupt Request) vector
 */
 
 
-//TODO fix the stupid magic number ranges
 pub struct Databus {
     ram: Box<[u8; RAM_SIZE]>,
     cartridge: Option<Cartridge>,
@@ -46,11 +47,11 @@ impl Databus {
 
     pub fn read(&self, address: u16) -> u8 {
         match address {
-            0..=0x1fff => {
+            INTERNAL_RAM_START..=INTERNAL_RAM_END => {
                 self.ram[address as usize % RAM_SIZE]
             }
-            0x4020..=0xFFFF => {
-                self.cartridge.as_ref().unwrap().read(address)
+            CARTRIDGE_SPACE_START..=END => {
+                self.cartridge.as_ref().unwrap().read_prg(address)
             }
             _ => unreachable!()
         }
@@ -58,12 +59,12 @@ impl Databus {
 
     pub fn read_slice(&self, address: u16, len: usize) -> &[u8] {
         match address {
-            0..=0x1fff => {
+            INTERNAL_RAM_START..=INTERNAL_RAM_END => {
                 let index = address as usize;
                 &self.ram[index..index + len]
             }
-            0x4020..=0xFFFF => {
-                self.cartridge.as_ref().unwrap().read_slice(address, len)
+            CARTRIDGE_SPACE_START..=END => {
+                self.cartridge.as_ref().unwrap().read_prg_slice(address, len)
             }
             _ => unreachable!()
         }
@@ -79,11 +80,11 @@ impl Databus {
 
     pub fn write(&mut self, address: u16, data: u8) {
         match address {
-            0..=0x1fff => {
+            INTERNAL_RAM_START..=INTERNAL_RAM_END => {
                 self.ram[address as usize % RAM_SIZE] = data;
             }
-            0x4020..=0xFFFF => {
-                self.cartridge.as_mut().unwrap().write(address, data)
+            CARTRIDGE_SPACE_START..=END => {
+                self.cartridge.as_mut().unwrap().write_prg(address, data)
             }
 
             _ => unreachable!()
@@ -95,8 +96,7 @@ impl Databus {
         self.cartridge = Some(cartridge);
     }
 
-    // TODO this needs to be removed
-    pub fn get_cartridge(&self) -> &[u8] {
-        self.read_slice(CARTRIDGE_SPACE_OFFSET, 0xFFFF - CARTRIDGE_SPACE_OFFSET as usize)
+    pub fn get_cartridge_prg(&self) -> &[u8] {
+        self.read_slice(CARTRIDGE_SPACE_START, END as usize - CARTRIDGE_SPACE_START as usize)
     }
 }

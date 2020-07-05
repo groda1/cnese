@@ -1,15 +1,13 @@
 use crate::cpu::cpu::Cpu;
 use crate::cpu::databus::Databus;
-use crate::nes::cartridge::cartridge::{create_cartridge_from_ines, create_cartridge_from_raw};
+use crate::nes::cartridge::cartridge::Cartridge;
 
 pub struct NES {
     cpu: Cpu,
     databus: Databus,
 
-
     _actual_framerate: u32
 }
-
 
 impl NES {
     pub fn new() -> NES {
@@ -31,28 +29,17 @@ impl NES {
     pub fn get_databus(&self) -> &Databus {
         &self.databus
     }
-
     pub fn get_cpu(&self) -> &Cpu {
         &self.cpu
     }
-
     pub fn reset(&mut self) {
         self.cpu.reset(&self.databus);
     }
 
-    pub fn load_frogrom(&mut self, rom_data: &[u8]) -> Result<(), &str> {
-        #[cfg(debug_assertions)] {
-            println!("Loading FrogROM");
-        }
-
-        let cartridge = create_cartridge_from_raw(rom_data)?;
-
+    pub fn load_cartridge(&mut self, cartridge : Cartridge) {
         self.databus.load_cartridge(cartridge);
-
-        Ok(())
+        self.reset();
     }
-
-
 
     pub fn set_irq_lo(&mut self) { self.cpu.set_irq_lo(); }
     pub fn set_irq_hi(&mut self) { self.cpu.set_irq_hi(); }
