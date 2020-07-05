@@ -10,8 +10,10 @@ use super::debug;
 pub fn create_instruction_window<'a>(font: &'a Font<'a>,
                                      secondary_font: &'a Font<'a>,
                                      height: usize,
-                                     instructions: Vec<Instruction>) -> CneseWindow<'a> {
-    let instruction_window = debug::InstructionWindow::new(font, secondary_font, instructions, height);
+                                     instructions: Vec<Instruction>,
+                                     instruction_rom_offest: usize) -> CneseWindow<'a> {
+    let instruction_window = debug::InstructionWindow::new(
+        font, secondary_font, instructions,instruction_rom_offest, height);
 
     CneseWindow::new(Box::new(instruction_window))
 }

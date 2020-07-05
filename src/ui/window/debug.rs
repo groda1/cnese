@@ -42,20 +42,21 @@ impl<'a> InstructionWindow<'a> {
     pub fn new(font: &'a Font<'a>,
                secondary_font: &'a Font<'a>,
                instructions: Vec<Instruction>,
+               instruction_rom_offset: usize,
                height: usize) -> InstructionWindow<'a> {
         let mut window = InstructionWindow {
             font,
             secondary_font,
             instructions,
             instruction_offset: 0,
-            instruction_rom_offset: databus::CARTRIDGE_SPACE_START as usize,
+            instruction_rom_offset,
             addr_to_instr_index: HashMap::new(),
             instr_to_addr: HashMap::new(),
             height,
         };
 
         let mut i = 0;
-        let mut addr = databus::CARTRIDGE_SPACE_START as usize;
+        let mut addr = instruction_rom_offset;
 
         let instructions = &window.instructions;
 
@@ -219,10 +220,13 @@ impl<'a> RenderableWindow for MemoryWindow<'a> {
         )?;
 
         let mut i = 0;
-        let data = nes.get_databus().read_slice(self.data_start, self.data_size);
+        let bus = nes.get_databus();
 
         while i < self.height && (i + 1) * 16 <= self.data_size {
-            let row = &data[(i * 16)..(i + 1) * 16];
+            let mut row = vec![0 as u8; 16];
+            for j in 0..16 {
+                row[j] = bus.read(self.data_start + (i * 16) as u16 + j as u16)
+            }
 
             util::render_text_small(canvas,
                                     self.secondary_font,

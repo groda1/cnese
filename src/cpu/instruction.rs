@@ -1,8 +1,9 @@
-use super::databus::Databus;
+use super::databus::{END, Databus};
 use super::state::State;
 use super::state;
 use super::addressing::AddressingMode;
 use super::cpu;
+use crate::nes::cartridge::cartridge::Cartridge;
 
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy)]
@@ -981,29 +982,28 @@ impl Instruction {
     }
 }
 
-pub fn decode_instruction(prg: &[u8]) -> Instruction {
-    let opcode = OPCODE_SET[prg[0] as usize];
+
+pub fn decode_instruction(bus: &Databus, address: u16) -> Instruction {
+    let opcode = OPCODE_SET[bus.read(address) as usize];
 
     let operand;
     match opcode.size {
         1 => operand = 0,
-        2 => operand = prg[1] as u16,
-        3 => operand = ((prg[2] as u16) << 8) + prg[1] as u16,
+        2 => operand = bus.read(address + 1) as u16,
+        3 => operand = bus.read_u16(address + 1),
         _ => unreachable!()
     }
 
     Instruction::new(opcode, operand)
 }
 
-pub fn deassemble(rom: &[u8]) -> Vec<Instruction> {
+pub fn deassemble(bus: &Databus, start_address: u16) -> Vec<Instruction> {
     let mut instructions: Vec<Instruction> = Vec::new();
-    let mut i: usize = 0;
-    let size = rom.len();
+    let mut i = start_address;
 
-    while i < (size - 6) {
-        let instruction = decode_instruction(&rom[i..i+3]);
-        i += instruction.opcode.size as usize;
-
+    while i < (END - 3) {
+        let instruction = decode_instruction(bus, i);
+        i += instruction.opcode.size as u16;
         instructions.push(instruction);
     }
 

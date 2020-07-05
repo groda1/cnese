@@ -64,20 +64,6 @@ impl CartridgeTrait for NRom {
         }
     }
 
-    fn read_prg_slice(&self, address: u16, len: usize) -> &[u8] {
-        match address {
-            PRG_RAM_START..=PRG_RAM_END => {
-                let index = (address - PRG_RAM_START) as usize;
-                &self.prg_ram[index..index + len]
-            }
-            PRG_ROM_START..=PRG_ROM_END => {
-                let index = (address - PRG_ROM_START) as usize;
-                &self.prg_rom[index..index + len]
-            }
-            _ => unreachable!()
-        }
-    }
-
     fn write_prg(&mut self, address: u16, data: u8) {
         match address {
             PRG_RAM_START..=PRG_RAM_END => {
@@ -98,4 +84,5 @@ impl CartridgeTrait for NRom {
         unimplemented!()
     }
 
+    fn get_instruction_offset(&self) -> u16 { PRG_ROM_START }
 }

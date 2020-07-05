@@ -6,7 +6,7 @@ const INTERNAL_RAM_START: u16 = 0x0000;
 const INTERNAL_RAM_END: u16 = 0x1FFF;
 const RAM_SIZE: usize = 0x0800;
 
-const END: u16 = 0xFFFF;
+pub const END: u16 = 0xFFFF;
 
 
 /*
@@ -57,18 +57,18 @@ impl Databus {
         }
     }
 
-    pub fn read_slice(&self, address: u16, len: usize) -> &[u8] {
-        match address {
-            INTERNAL_RAM_START..=INTERNAL_RAM_END => {
-                let index = address as usize;
-                &self.ram[index..index + len]
-            }
-            CARTRIDGE_SPACE_START..=END => {
-                self.cartridge.as_ref().unwrap().read_prg_slice(address, len)
-            }
-            _ => unreachable!()
-        }
-    }
+    // pub fn read_slice(&self, address: u16, len: usize) -> &[u8] {
+    //     match address {
+    //         INTERNAL_RAM_START..=INTERNAL_RAM_END => {
+    //             let index = address as usize;
+    //             &self.ram[index..index + len]
+    //         }
+    //         CARTRIDGE_SPACE_START..=END => {
+    //             self.cartridge.as_ref().unwrap().read_prg_slice(address, len)
+    //         }
+    //         _ => unreachable!()
+    //     }
+    // }
 
     pub fn read_u16(&self, address: u16) -> u16 {
         let lo = self.read(address);
@@ -91,12 +91,14 @@ impl Databus {
         }
     }
 
-
     pub fn load_cartridge(&mut self, cartridge: Cartridge) {
         self.cartridge = Some(cartridge);
     }
 
-    pub fn get_cartridge_prg(&self) -> &[u8] {
-        self.read_slice(CARTRIDGE_SPACE_START, END as usize - CARTRIDGE_SPACE_START as usize)
+    pub fn get_cartridge(&self) -> Option<&Cartridge> {
+        match &self.cartridge {
+            None => {Option::None},
+            Some(c) => { Option::Some(&c)},
+        }
     }
 }

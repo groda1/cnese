@@ -22,11 +22,6 @@ impl CartridgeTrait for FrogRom {
         self.rom[(address - CARTRIDGE_OFFSET) as usize]
     }
 
-    fn read_prg_slice(&self, address: u16, len: usize) -> &[u8] {
-        let addr = (address - CARTRIDGE_OFFSET) as usize;
-        &self.rom[addr..addr + len]
-    }
-
     fn write_prg(&mut self, _address: u16, _data: u8) {
         unimplemented!()
     }
@@ -38,4 +33,6 @@ impl CartridgeTrait for FrogRom {
     fn read_chr_slice(&self, _address: u16, _len: usize) -> &[u8] {
         unimplemented!()
     }
+
+    fn get_instruction_offset(&self) -> u16 { CARTRIDGE_OFFSET }
 }

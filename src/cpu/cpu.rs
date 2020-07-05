@@ -105,8 +105,7 @@ impl Cpu {
         } else if !self.irq && !self.state.get_status_field(super::state::SR_MASK_INTERRUPT) { // IRQ
             self.next_instruction = instruction::IRQ_INSTRUCTION;
         } else {
-            let next_instruction_binary = bus.read_slice(self.state.get_pc(), 3);
-            self.next_instruction = instruction::decode_instruction(next_instruction_binary);
+            self.next_instruction = instruction::decode_instruction(bus, self.state.get_pc());
         }
 
         self.next_instruction_cost = self.next_instruction.calculate_cycle_cost(self.get_state(), bus);

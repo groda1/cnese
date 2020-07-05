@@ -13,12 +13,14 @@ use super::window::window::CneseWindow;
 
 use crate::nes::nes::NES;
 use crate::cpu::instruction;
+use crate::nes::cartridge::cartridge::Cartridge;
 
 static SCREEN_WIDTH: u32 = 1250;
 static SCREEN_HEIGHT: u32 = 600;
 
 static FRAMERATE: u32 = 60;
 static FRAMETIME_NANO: u64 = 1_000_000_000 / FRAMERATE as u64;
+static TICKS_PER_FRAME: usize = 100;
 
 static BACKGROUND_COLOR: (u8, u8, u8, u8) = (128, 128, 128, 255);
 static TEXT_COLOR: (u8, u8, u8, u8) = (255, 255, 255, 255);
@@ -41,7 +43,10 @@ fn render(canvas: &mut Canvas<Window>,
 }
 
 pub fn run(nes: &mut NES) -> Result<(), String> {
-    let deassembled_instructions = instruction::deassemble(nes.get_databus().get_cartridge_prg());
+    let instruction_offset = nes.get_databus()
+        .get_cartridge()
+        .map_or(0, |cart| cart.get_instruction_offset());
+    let deassembled_instructions = instruction::deassemble(nes.get_databus(), instruction_offset);
 
     let font_rwops = sdl2::rwops::RWops::from_bytes(include_bytes!("resources/nesfont.fon"))?;
 
@@ -63,8 +68,11 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
     let dark_font = super::font::Font::new(&texture_creator, &ttf_font, Color::from(TEXT_COLOR_DARK));
 
     let mut windows = Vec::new();
-
-    let mut instr_window = window::create_instruction_window(&font, &dark_font, 22, deassembled_instructions);
+    let mut instr_window = window::create_instruction_window(&font,
+                                                             &dark_font,
+                                                             22,
+                                                             deassembled_instructions,
+                                                             instruction_offset as usize);
     instr_window.set_pos(20, 130);
     instr_window.set_active(true);
     windows.push(&mut instr_window);
@@ -132,7 +140,10 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
         }
 
         if running {
-            nes.tick();
+            for i in 0..TICKS_PER_FRAME {
+                nes.tick();
+            }
+
         }
 
         nes.set_actual_framerate(framerate);
