@@ -4,7 +4,7 @@ extern crate lazy_static;
 mod cpu;
 mod nes;
 mod util;
-mod ui;
+mod gfx;
 
 use nes::nes::NES;
 use nes::ines;
@@ -43,7 +43,7 @@ fn main() {
         Some(c) => { nes.load_cartridge(c)},
     }
 
-    let _result = ui::main::run(&mut nes).unwrap();
+    let _result = gfx::main::run(&mut nes).unwrap();
 
 
 }

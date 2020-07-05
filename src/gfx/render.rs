@@ -2,7 +2,8 @@ use sdl2::render::{Canvas, Texture};
 use sdl2::video::{Window};
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
-use crate::ui::font::Font;
+
+use super::ui::font::Font;
 
 macro_rules! rect (
     ($x:expr, $y:expr, $w:expr, $h:expr) => (
@@ -64,13 +65,13 @@ fn _render_textured_rect(canvas: &mut Canvas<Window>,
 }
 
 
-pub fn render_window(canvas: &mut Canvas<Window>,
-                     x: i32,
-                     y: i32,
-                     w: u32,
-                     h: u32,
-                     border_color: Color,
-                     bg_color: Color) -> Result<(), String> {
+pub fn window(canvas: &mut Canvas<Window>,
+              x: i32,
+              y: i32,
+              w: u32,
+              h: u32,
+              border_color: Color,
+              bg_color: Color) -> Result<(), String> {
     let rect = rect!(x,y,w,h);
 
     canvas.set_draw_color(bg_color);
@@ -80,5 +81,15 @@ pub fn render_window(canvas: &mut Canvas<Window>,
     canvas.draw_rect(rect)?;
 
     Ok(())
+}
+
+pub fn textured_window(canvas: &mut Canvas<Window>,
+                       x: i32,
+                       y: i32,
+                       w: u32,
+                       h: u32,
+                       _border_width: u32,
+                       texture: &Texture) {
+    _render_textured_rect(canvas, texture, x, y, w, h);
 }
 

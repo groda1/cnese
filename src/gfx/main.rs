@@ -8,8 +8,9 @@ use sdl2::video::Window;
 use sdl2::pixels::Color;
 use std::time::Duration;
 
-use crate::ui::window::window;
-use super::window::window::CneseWindow;
+use crate::gfx::ui::window::window;
+use crate::gfx::ui::window::window::CneseWindow;
+use crate::gfx::ui::font::Font;
 
 use crate::nes::nes::NES;
 use crate::cpu::instruction;
@@ -64,8 +65,8 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
     let texture_creator = canvas.texture_creator();
 
     let ttf_font = ttf_context.load_font_from_rwops(font_rwops, 128)?;
-    let font = super::font::Font::new(&texture_creator, &ttf_font, Color::from(TEXT_COLOR));
-    let dark_font = super::font::Font::new(&texture_creator, &ttf_font, Color::from(TEXT_COLOR_DARK));
+    let font = Font::new(&texture_creator, &ttf_font, Color::from(TEXT_COLOR));
+    let dark_font = Font::new(&texture_creator, &ttf_font, Color::from(TEXT_COLOR_DARK));
 
     let mut windows = Vec::new();
     let mut instr_window = window::create_instruction_window(&font,
@@ -94,7 +95,7 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
 
     let mut ram_window = window::create_memory_window(&font, &dark_font, 0x200, 0x600, 48);
     ram_window.set_pos(780, 20);
-    ram_window.set_active(true);
+    // ram_window.set_active(true);
     windows.push(&mut ram_window);
 
     let mut framerate_counter = window::create_framerate_window(&font);
@@ -106,6 +107,12 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
     let timer = sdl_context.timer()?;
     let mut framerate = FRAMERATE;
     let mut running = false;
+
+    let mut left_patterntable = window::create_patterntable_window(&texture_creator);
+    left_patterntable.set_pos(780, 20);
+    left_patterntable.set_active(true);
+    windows.push(&mut left_patterntable);
+
 
     'mainloop: loop {
         let time = timer.performance_counter();
@@ -143,7 +150,6 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
             for i in 0..TICKS_PER_FRAME {
                 nes.tick();
             }
-
         }
 
         nes.set_actual_framerate(framerate);

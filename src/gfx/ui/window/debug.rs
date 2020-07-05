@@ -6,11 +6,11 @@ use sdl2::pixels::Color;
 use crate::cpu::instruction::Instruction;
 use crate::cpu::databus;
 use crate::cpu::state;
-use crate::ui::font::Font;
 use crate::nes::nes::NES;
+use crate::gfx::render;
 
-use super::super::util;
 use super::window::RenderableWindow;
+use super::super::font::Font;
 
 static FRAME_BORDER_COLOR: (u8, u8, u8, u8) = (255, 255, 255, 255);
 static FRAME_BACKGROUND_COLOR: (u8, u8, u8, u8) = (64, 64, 64, 255);
@@ -102,13 +102,13 @@ impl<'a> RenderableWindow for InstructionWindow<'a> {
         let pc = nes.get_cpu().get_state().get_pc() as usize;
         self.readjust(pc);
 
-        util::render_window(canvas,
-                            x,
-                            y,
-                            INSTRUCTION_WINDOW_WIDTH,
-                            self.height as u32 * ROW_OFFSET as u32 + (FRAME_PADDING as u32 * 2),
-                            Color::from(FRAME_BORDER_COLOR),
-                            Color::from(FRAME_BACKGROUND_COLOR))?;
+        render::window(canvas,
+                       x,
+                       y,
+                       INSTRUCTION_WINDOW_WIDTH,
+                       self.height as u32 * ROW_OFFSET as u32 + (FRAME_PADDING as u32 * 2),
+                       Color::from(FRAME_BORDER_COLOR),
+                       Color::from(FRAME_BACKGROUND_COLOR))?;
 
         let mut memory_addr = self.instruction_rom_offset;
 
@@ -116,26 +116,26 @@ impl<'a> RenderableWindow for InstructionWindow<'a> {
             let instruction = self.instructions[i + self.instruction_offset];
 
             if pc == memory_addr {
-                util::render_text(canvas,
-                                  self.font,
-                                  x + FRAME_PADDING,
-                                  y + i as i32 * ROW_OFFSET + FRAME_PADDING,
-                                  ">",
+                render::render_text(canvas,
+                                    self.font,
+                                    x + FRAME_PADDING,
+                                    y + i as i32 * ROW_OFFSET + FRAME_PADDING,
+                                    ">",
                 )?;
             }
 
-            util::render_text(canvas,
-                              self.secondary_font,
-                              x + TEXT_ADDR_OFFSET + FRAME_PADDING,
-                              y + i as i32 * ROW_OFFSET + FRAME_PADDING,
-                              format!("{:04X}", memory_addr).as_str(),
+            render::render_text(canvas,
+                                self.secondary_font,
+                                x + TEXT_ADDR_OFFSET + FRAME_PADDING,
+                                y + i as i32 * ROW_OFFSET + FRAME_PADDING,
+                                format!("{:04X}", memory_addr).as_str(),
             )?;
 
-            util::render_text(canvas,
-                              self.font,
-                              x + TEXT_INSTRUCTION_OFFSET + FRAME_PADDING,
-                              y + i as i32 * ROW_OFFSET + FRAME_PADDING,
-                              instruction.format().as_str(),
+            render::render_text(canvas,
+                                self.font,
+                                x + TEXT_INSTRUCTION_OFFSET + FRAME_PADDING,
+                                y + i as i32 * ROW_OFFSET + FRAME_PADDING,
+                                instruction.format().as_str(),
             )?;
 
             memory_addr += instruction.get_size() as usize;
@@ -160,14 +160,14 @@ impl<'a> RenderableWindow for FramerateCounter<'a> {
               x: i32,
               y: i32,
               nes: &NES) -> Result<(), String> {
-        util::render_text_small(canvas, self.font, x, y,
-                                format!("FPS: {}", nes.get_actual_framerate()).as_str(),
+        render::render_text_small(canvas, self.font, x, y,
+                                  format!("FPS: {}", nes.get_actual_framerate()).as_str(),
         )?;
-        util::render_text_small(canvas, self.font, x + 90, y,
-                                format!("Cycles: {}", nes.get_cpu().get_cycle_count()).as_str(),
+        render::render_text_small(canvas, self.font, x + 90, y,
+                                  format!("Cycles: {}", nes.get_cpu().get_cycle_count()).as_str(),
         )?;
-        util::render_text_small(canvas, self.font, x + 200, y,
-                                format!("Instructions: {}", nes.get_cpu().get_instruction_count()).as_str(),
+        render::render_text_small(canvas, self.font, x + 200, y,
+                                  format!("Instructions: {}", nes.get_cpu().get_instruction_count()).as_str(),
         )?;
 
         Ok(())
@@ -210,13 +210,13 @@ impl<'a> RenderableWindow for MemoryWindow<'a> {
               y: i32,
               nes: &NES) -> Result<(), String> {
         const TEXT_MEMORY_OFFSET: i32 = 35;
-        util::render_window(canvas,
-                            x,
-                            y,
-                            MEMORY_WINDOW_WIDTH,
-                            (self.height * ROW_OFFSET_SMALL as usize + (FRAME_PADDING * 2) as usize) as u32,
-                            Color::from(FRAME_BORDER_COLOR),
-                            Color::from(FRAME_BACKGROUND_COLOR),
+        render::window(canvas,
+                       x,
+                       y,
+                       MEMORY_WINDOW_WIDTH,
+                       (self.height * ROW_OFFSET_SMALL as usize + (FRAME_PADDING * 2) as usize) as u32,
+                       Color::from(FRAME_BORDER_COLOR),
+                       Color::from(FRAME_BACKGROUND_COLOR),
         )?;
 
         let mut i = 0;
@@ -228,11 +228,11 @@ impl<'a> RenderableWindow for MemoryWindow<'a> {
                 row[j] = bus.read(self.data_start + (i * 16) as u16 + j as u16)
             }
 
-            util::render_text_small(canvas,
-                                    self.secondary_font,
-                                    x + FRAME_PADDING,
-                                    y + FRAME_PADDING + (i as i32 * ROW_OFFSET_SMALL),
-                                    format!("{:04X}", self.data_start as usize + (i * 16)).as_str(),
+            render::render_text_small(canvas,
+                                      self.secondary_font,
+                                      x + FRAME_PADDING,
+                                      y + FRAME_PADDING + (i as i32 * ROW_OFFSET_SMALL),
+                                      format!("{:04X}", self.data_start as usize + (i * 16)).as_str(),
             )?;
 
             let line = format!("{:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X}  {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X}",
@@ -240,11 +240,11 @@ impl<'a> RenderableWindow for MemoryWindow<'a> {
                                row[8], row[9], row[10], row[11], row[12], row[13], row[14], row[15]
             );
 
-            util::render_text_small(canvas,
-                                    self.font,
-                                    x + FRAME_PADDING + TEXT_MEMORY_OFFSET,
-                                    y + FRAME_PADDING + (i as i32 * ROW_OFFSET_SMALL),
-                                    line.as_str(),
+            render::render_text_small(canvas,
+                                      self.font,
+                                      x + FRAME_PADDING + TEXT_MEMORY_OFFSET,
+                                      y + FRAME_PADDING + (i as i32 * ROW_OFFSET_SMALL),
+                                      line.as_str(),
             )?;
 
             i += 1;
@@ -277,82 +277,82 @@ impl<'a> RenderableWindow for RegisterWindow<'a> {
 
         let state = nes.get_cpu().get_state();
 
-        util::render_window(canvas,
-                            x,
-                            y,
-                            REGISTER_WINDOW_WIDTH,
-                            (FRAME_PADDING * 2 + (ROW_OFFSET * 4)) as u32,
-                            Color::from(FRAME_BORDER_COLOR),
-                            Color::from(FRAME_BACKGROUND_COLOR),
+        render::window(canvas,
+                       x,
+                       y,
+                       REGISTER_WINDOW_WIDTH,
+                       (FRAME_PADDING * 2 + (ROW_OFFSET * 4)) as u32,
+                       Color::from(FRAME_BORDER_COLOR),
+                       Color::from(FRAME_BACKGROUND_COLOR),
         )?;
 
-        util::render_text(canvas,
-                          self.font,
-                          x + FRAME_PADDING,
-                          y + FRAME_PADDING,
-                          "A:    X:    Y:",
+        render::render_text(canvas,
+                            self.font,
+                            x + FRAME_PADDING,
+                            y + FRAME_PADDING,
+                            "A:    X:    Y:",
         )?;
-        util::render_text(canvas,
-                          self.secondary_font,
-                          x + FRAME_PADDING,
-                          y + FRAME_PADDING,
-                          format!("  ${:02X}   ${:02X}   ${:02X}", state.acc, state.x, state.y).as_str(),
-        )?;
-
-        util::render_text(canvas,
-                          self.font,
-                          x + FRAME_PADDING,
-                          y + FRAME_PADDING + ROW_OFFSET + EXTRA_ROW_OFFSET,
-                          "PC:      SP:",
-        )?;
-        util::render_text(canvas,
-                          self.secondary_font,
-                          x + FRAME_PADDING,
-                          y + FRAME_PADDING + ROW_OFFSET + EXTRA_ROW_OFFSET,
-                          format!("   ${:04X}    ${:02X}", state.get_pc(), state.stack_pointer).as_str(),
+        render::render_text(canvas,
+                            self.secondary_font,
+                            x + FRAME_PADDING,
+                            y + FRAME_PADDING,
+                            format!("  ${:02X}   ${:02X}   ${:02X}", state.acc, state.x, state.y).as_str(),
         )?;
 
-
-        util::render_text(canvas,
-                          if state.get_status_field(state::SR_MASK_NEGATIVE) { self.font } else { self.secondary_font },
-                          x + FRAME_PADDING,
-                          y + FRAME_PADDING + ROW_OFFSET * 3,
-                          "N",
+        render::render_text(canvas,
+                            self.font,
+                            x + FRAME_PADDING,
+                            y + FRAME_PADDING + ROW_OFFSET + EXTRA_ROW_OFFSET,
+                            "PC:      SP:",
+        )?;
+        render::render_text(canvas,
+                            self.secondary_font,
+                            x + FRAME_PADDING,
+                            y + FRAME_PADDING + ROW_OFFSET + EXTRA_ROW_OFFSET,
+                            format!("   ${:04X}    ${:02X}", state.get_pc(), state.stack_pointer).as_str(),
         )?;
 
-        util::render_text(canvas,
-                          if state.get_status_field(state::SR_MASK_OVERFLOW) { self.font } else { self.secondary_font },
-                          x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 1),
-                          y + FRAME_PADDING + ROW_OFFSET * 3,
-                          "V",
+
+        render::render_text(canvas,
+                            if state.get_status_field(state::SR_MASK_NEGATIVE) { self.font } else { self.secondary_font },
+                            x + FRAME_PADDING,
+                            y + FRAME_PADDING + ROW_OFFSET * 3,
+                            "N",
         )?;
 
-        util::render_text(canvas,
-                          if state.get_status_field(state::SR_MASK_DECIMAL) { self.font } else { self.secondary_font },
-                          x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 4),
-                          y + FRAME_PADDING + ROW_OFFSET * 3,
-                          "D",
+        render::render_text(canvas,
+                            if state.get_status_field(state::SR_MASK_OVERFLOW) { self.font } else { self.secondary_font },
+                            x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 1),
+                            y + FRAME_PADDING + ROW_OFFSET * 3,
+                            "V",
         )?;
 
-        util::render_text(canvas,
-                          if state.get_status_field(state::SR_MASK_INTERRUPT) { self.font } else { self.secondary_font },
-                          x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 5),
-                          y + FRAME_PADDING + ROW_OFFSET * 3,
-                          "I",
+        render::render_text(canvas,
+                            if state.get_status_field(state::SR_MASK_DECIMAL) { self.font } else { self.secondary_font },
+                            x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 4),
+                            y + FRAME_PADDING + ROW_OFFSET * 3,
+                            "D",
         )?;
 
-        util::render_text(canvas,
-                          if state.get_status_field(state::SR_MASK_ZERO) { self.font } else { self.secondary_font },
-                          x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 6),
-                          y + FRAME_PADDING + ROW_OFFSET * 3,
-                          "Z",
+        render::render_text(canvas,
+                            if state.get_status_field(state::SR_MASK_INTERRUPT) { self.font } else { self.secondary_font },
+                            x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 5),
+                            y + FRAME_PADDING + ROW_OFFSET * 3,
+                            "I",
         )?;
 
-        util::render_text(canvas,
-                          if state.get_status_field(state::SR_MASK_CARRY) { self.font } else { self.secondary_font },
-                          x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 7),
-                          y + FRAME_PADDING + ROW_OFFSET * 3,
-                          "C",
+        render::render_text(canvas,
+                            if state.get_status_field(state::SR_MASK_ZERO) { self.font } else { self.secondary_font },
+                            x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 6),
+                            y + FRAME_PADDING + ROW_OFFSET * 3,
+                            "Z",
+        )?;
+
+        render::render_text(canvas,
+                            if state.get_status_field(state::SR_MASK_CARRY) { self.font } else { self.secondary_font },
+                            x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 7),
+                            y + FRAME_PADDING + ROW_OFFSET * 3,
+                            "C",
         )?;
 
         Ok(())

@@ -1,11 +1,12 @@
-use sdl2::render::Canvas;
-use sdl2::video::Window;
+use sdl2::render::{Canvas, TextureCreator};
+use sdl2::video::{Window, WindowContext};
 
-use crate::ui::font::Font;
 use crate::nes::nes::NES;
 use crate::cpu::instruction::Instruction;
 
 use super::debug;
+use super::patterntable;
+use super::super::font::Font;
 
 pub fn create_instruction_window<'a>(font: &'a Font<'a>,
                                      secondary_font: &'a Font<'a>,
@@ -37,6 +38,12 @@ pub fn create_memory_window<'a>(font: &'a Font<'a>,
 pub fn create_framerate_window<'a>(font: &'a Font<'a>) -> CneseWindow<'a> {
     let counter = debug::FramerateCounter::new(font);
     CneseWindow::new(Box::new(counter))
+}
+
+pub fn create_patterntable_window(texture_creator : &TextureCreator<WindowContext>) -> CneseWindow {
+    let patterntable = patterntable::PatternTableWindow::new(texture_creator);
+    CneseWindow::new(Box::new(patterntable))
+
 }
 
 pub struct CneseWindow<'a> {

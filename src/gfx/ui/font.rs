@@ -46,7 +46,7 @@ impl<'a> Font<'a> {
 fn build_character_texture<'a>(texture_creator: &'a TextureCreator<WindowContext>,
                                font: &sdl2::ttf::Font,
                                character: char,
-                                color: Color) -> Texture<'a> {
+                               color: Color) -> Texture<'a> {
     let surface = font.render_char(character).
         blended(color).map_err(|e| e.to_string()).unwrap();
     let texture = texture_creator.create_texture_from_surface(&surface)
