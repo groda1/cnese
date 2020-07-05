@@ -1,7 +1,7 @@
     processor 6502
     org $4020
 
-kek:
+start:
 
     LDA #$01
     ASL
@@ -59,4 +59,8 @@ kek:
     DEC $210
     DEC $210,X
 
+	org $FFFC
+    .word start
+	org $FFFE
+	.word start
 
