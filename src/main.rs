@@ -18,7 +18,6 @@ fn main() {
     let path = &args[1];
 
 
-
     let mut cartridge = Option::None;
 
     if path.ends_with("bin") {
