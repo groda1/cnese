@@ -53,7 +53,6 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
     let video_subsys = sdl_context.video()?;
     let ttf_context = sdl2::ttf::init().map_err(|e| e.to_string())?;
 
-
     let window = video_subsys.window("cnese", SCREEN_WIDTH, SCREEN_HEIGHT)
         // .allow_highdpi()
         .position_centered()
