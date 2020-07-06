@@ -4,14 +4,25 @@ use std::cell::RefCell;
 
 const PATTERN_TABLE_SIZE: usize = 0x1000;
 
+
+pub trait PpuInterface {
+
+}
+
 pub struct Ppu {
     cartridge: Rc<RefCell<Cartridge>>
 }
 
-
 impl Ppu {
     pub fn new(cartridge: Rc<RefCell<Cartridge>>) -> Ppu {
         Ppu { cartridge }
+    }
+
+    pub fn write(address: u16, data: u8) {
+        unimplemented!()
+    }
+    pub fn read(address: u16) -> u8 {
+        unimplemented!()
     }
 
     pub fn patterntable_to_texture_data(&self, pattern_table_index: u8) -> [u8; 16384] {

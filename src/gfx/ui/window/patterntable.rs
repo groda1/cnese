@@ -36,7 +36,7 @@ impl<'a> RenderableWindow for PatternTableWindow<'a> {
               y: i32,
               nes: &NES) -> Result<(), String> {
 
-        let pixel_data = nes.get_ppu().patterntable_to_texture_data(self.pattern_table_index);
+        let pixel_data = nes.borrow_ppu().patterntable_to_texture_data(self.pattern_table_index);
         let mut texture_rgb_data = [0 as u8; (128 * 128 * 3) as usize];
 
         for (i, val) in pixel_data.iter().enumerate() {

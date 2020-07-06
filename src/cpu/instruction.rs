@@ -1,4 +1,4 @@
-use super::databus::{END, Databus};
+use super::databus::Databus;
 use super::state::State;
 use super::state;
 use super::addressing::AddressingMode;
@@ -244,35 +244,35 @@ impl Operation {
     }
 }
 
-type OperationFn = fn(state: &mut State, bus: &mut Databus, operand: u16);
+type OperationFn = fn(state: &mut State, bus: &mut dyn Databus, operand: u16);
 
-const NOT_IMPLEMENTED: OperationFn = |_state: &mut State, _bus: &mut Databus, _operand: u16| {
+const NOT_IMPLEMENTED: OperationFn = |_state: &mut State, _bus: &mut dyn Databus, _operand: u16| {
     println!("Not Implemented!");
 };
 
-const ADC_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const ADC_IMM: OperationFn = |state: &mut State, _bus: &mut dyn Databus, operand: u16| {
     _adc(state, operand as u8);
 };
 
-const ADC_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+const ADC_MEM: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16| {
     _adc(state, bus.read(operand));
 };
 
-const AND_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const AND_IMM: OperationFn = |state: &mut State, _bus: &mut dyn Databus, operand: u16| {
     state.acc &= operand as u8;
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
 };
 
-const AND_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+const AND_MEM: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16| {
     state.acc &= bus.read(operand);
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
 };
 
-const ASL_ACC: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+const ASL_ACC: OperationFn = |state: &mut State, _bus: &mut dyn Databus, _operand: u16| {
     let overflow = (state.acc & 0x80) > 0;
     state.acc <<= 1;
 
@@ -281,7 +281,7 @@ const ASL_ACC: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u
     state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
 };
 
-const ASL_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+const ASL_MEM: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16| {
     let mut value = bus.read(operand);
     let overflow = (value & 0x80) > 0;
     value <<= 1;
@@ -292,107 +292,107 @@ const ASL_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16
     state.set_status_field(state::SR_MASK_ZERO, value == 0);
 };
 
-const BCC: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const BCC: OperationFn = |state: &mut State, _bus: &mut dyn Databus, operand: u16| {
     if _should_bcc(state) {
         state.set_next_pc(operand);
     }
 };
 
-const BCS: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const BCS: OperationFn = |state: &mut State, _bus: &mut dyn Databus, operand: u16| {
     if _should_bcs(state) {
         state.set_next_pc(operand);
     }
 };
 
-const BEQ: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const BEQ: OperationFn = |state: &mut State, _bus: &mut dyn Databus, operand: u16| {
     if _should_beq(state) {
         state.set_next_pc(operand);
     }
 };
 
-const BIT: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+const BIT: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16| {
     let op = bus.read(operand);
     state.set_status_field(state::SR_MASK_NEGATIVE, (op & state::SR_MASK_NEGATIVE) > 0);
     state.set_status_field(state::SR_MASK_OVERFLOW, (op & state::SR_MASK_OVERFLOW) > 0);
     state.set_status_field(state::SR_MASK_ZERO, (op & state.acc) > 0);
 };
 
-const BMI: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const BMI: OperationFn = |state: &mut State, _bus: &mut dyn Databus, operand: u16| {
     if _should_bmi(state) {
         state.set_next_pc(operand);
     }
 };
 
-const BNE: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const BNE: OperationFn = |state: &mut State, _bus: &mut dyn Databus, operand: u16| {
     if _should_bne(state) {
         state.set_next_pc(operand);
     }
 };
 
-const BPL: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const BPL: OperationFn = |state: &mut State, _bus: &mut dyn Databus, operand: u16| {
     if _should_bpl(state) {
         state.set_next_pc(operand);
     }
 };
 
-const BRK: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
+const BRK: OperationFn = |state: &mut State, bus: &mut dyn Databus, _operand: u16| {
     state.set_next_pc(state.calculate_relative_pc(1));
     _handle_interrupt(state, bus, cpu::IRQ_VECTOR_ADDRESS, true);
 };
 
-const BVC: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const BVC: OperationFn = |state: &mut State, _bus: &mut dyn Databus, operand: u16| {
     if _should_bvc(state) {
         state.set_next_pc(operand);
     }
 };
 
-const BVS: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const BVS: OperationFn = |state: &mut State, _bus: &mut dyn Databus, operand: u16| {
     if _should_bvs(state) {
         state.set_next_pc(operand);
     }
 };
 
-const CLC: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+const CLC: OperationFn = |state: &mut State, _bus: &mut dyn Databus, _operand: u16| {
     state.set_status_field(state::SR_MASK_CARRY, false);
 };
 
-const CLD: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+const CLD: OperationFn = |state: &mut State, _bus: &mut dyn Databus, _operand: u16| {
     state.set_status_field(state::SR_MASK_DECIMAL, false);
 };
 
-const CLI: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+const CLI: OperationFn = |state: &mut State, _bus: &mut dyn Databus, _operand: u16| {
     state.set_status_field(state::SR_MASK_INTERRUPT, false);
 };
 
-const CLV: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+const CLV: OperationFn = |state: &mut State, _bus: &mut dyn Databus, _operand: u16| {
     state.set_status_field(state::SR_MASK_OVERFLOW, false);
 };
 
-const CMP_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const CMP_IMM: OperationFn = |state: &mut State, _bus: &mut dyn Databus, operand: u16| {
     _compare(state, operand as u8, state.acc);
 };
 
-const CMP_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+const CMP_MEM: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16| {
     _compare(state, bus.read(operand), state.acc);
 };
 
-const CPY_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const CPY_IMM: OperationFn = |state: &mut State, _bus: &mut dyn Databus, operand: u16| {
     _compare(state, operand as u8, state.y);
 };
 
-const CPY_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+const CPY_MEM: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16| {
     _compare(state, bus.read(operand), state.y);
 };
 
-const CPX_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const CPX_IMM: OperationFn = |state: &mut State, _bus: &mut dyn Databus, operand: u16| {
     _compare(state, operand as u8, state.x);
 };
 
-const CPX_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+const CPX_MEM: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16| {
     _compare(state, bus.read(operand), state.x);
 };
 
-const DEC: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+const DEC: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16| {
     let value = bus.read(operand).wrapping_sub(1);
     bus.write(operand, value);
 
@@ -400,35 +400,35 @@ const DEC: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
     state.set_status_field(state::SR_MASK_ZERO, value == 0);
 };
 
-const DEX: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+const DEX: OperationFn = |state: &mut State, _bus: &mut dyn Databus, _operand: u16| {
     state.x = state.x.wrapping_sub(1);
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.x >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.x == 0);
 };
 
-const DEY: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+const DEY: OperationFn = |state: &mut State, _bus: &mut dyn Databus, _operand: u16| {
     state.y = state.y.wrapping_sub(1);
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.y >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.y == 0);
 };
 
-const EOR_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const EOR_IMM: OperationFn = |state: &mut State, _bus: &mut dyn Databus, operand: u16| {
     state.acc ^= operand as u8;
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
 };
 
-const EOR_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+const EOR_MEM: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16| {
     state.acc ^= bus.read(operand);
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
 };
 
-const INC: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+const INC: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16| {
     let value = bus.read(operand).wrapping_add(1);
     bus.write(operand, value);
 
@@ -436,72 +436,72 @@ const INC: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
     state.set_status_field(state::SR_MASK_ZERO, value == 0);
 };
 
-const INX: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+const INX: OperationFn = |state: &mut State, _bus: &mut dyn Databus, _operand: u16| {
     state.x = state.x.wrapping_add(1);
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.x >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.x == 0);
 };
 
-const INY: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+const INY: OperationFn = |state: &mut State, _bus: &mut dyn Databus, _operand: u16| {
     state.y = state.y.wrapping_add(1);
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.y >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.y == 0);
 };
 
-const JMP: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const JMP: OperationFn = |state: &mut State, _bus: &mut dyn Databus, operand: u16| {
     state.set_next_pc(operand);
 };
 
-const JSR: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+const JSR: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16| {
     _push_pc_to_stack(state, bus,state.get_next_pc());
     state.set_next_pc(operand);
 };
 
-const LDA_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const LDA_IMM: OperationFn = |state: &mut State, _bus: &mut dyn Databus, operand: u16| {
     state.acc = operand as u8;
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
 };
 
-const LDA_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+const LDA_MEM: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16| {
     state.acc = bus.read(operand);
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
 };
 
-const LDX_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const LDX_IMM: OperationFn = |state: &mut State, _bus: &mut dyn Databus, operand: u16| {
     state.x = operand as u8;
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.x >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.x == 0);
 };
 
-const LDX_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+const LDX_MEM: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16| {
     state.x = bus.read(operand);
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.x >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.x == 0);
 };
 
-const LDY_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const LDY_IMM: OperationFn = |state: &mut State, _bus: &mut dyn Databus, operand: u16| {
     state.y = operand as u8;
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.y >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.y == 0);
 };
 
-const LDY_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+const LDY_MEM: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16| {
     state.y = bus.read(operand);
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.y >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.y == 0);
 };
 
-const LSR_ACC: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+const LSR_ACC: OperationFn = |state: &mut State, _bus: &mut dyn Databus, _operand: u16| {
     let overflow = (state.acc & 0x1) > 0;
     state.acc >>= 1;
 
@@ -510,7 +510,7 @@ const LSR_ACC: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u
     state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
 };
 
-const LSR_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+const LSR_MEM: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16| {
     let mut value = bus.read(operand);
     let overflow = (value & 0x1) > 0;
     value >>= 1;
@@ -521,40 +521,40 @@ const LSR_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16
     state.set_status_field(state::SR_MASK_ZERO, value == 0);
 };
 
-const NOP: OperationFn = |_state: &mut State, _bus: &mut Databus, _operand: u16| {};
+const NOP: OperationFn = |_state: &mut State, _bus: &mut dyn Databus, _operand: u16| {};
 
-const ORA_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const ORA_IMM: OperationFn = |state: &mut State, _bus: &mut dyn Databus, operand: u16| {
     state.acc |= operand as u8;
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
 };
 
-const ORA_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+const ORA_MEM: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16| {
     state.acc |= bus.read(operand);
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
 };
 
-const PHA: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
+const PHA: OperationFn = |state: &mut State, bus: &mut dyn Databus, _operand: u16| {
     _push_stack(state, bus, state.acc);
 };
 
-const PHP: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
+const PHP: OperationFn = |state: &mut State, bus: &mut dyn Databus, _operand: u16| {
     _push_stack(state, bus, state.get_status_ref().get_as_u8());
 };
 
-const PLA: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
+const PLA: OperationFn = |state: &mut State, bus: &mut dyn Databus, _operand: u16| {
     state.acc = _pull_stack(state, bus);
 };
 
-const PLP: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
+const PLP: OperationFn = |state: &mut State, bus: &mut dyn Databus, _operand: u16| {
     let status_u8 = _pull_stack(state, bus);
     state.set_status(state::Status::from_u8(status_u8));
 };
 
-const ROL_ACC: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+const ROL_ACC: OperationFn = |state: &mut State, _bus: &mut dyn Databus, _operand: u16| {
     let overflow = (state.acc & 0x80) > 0;
     state.acc <<= 1;
     state.acc += state.get_status_field(state::SR_MASK_CARRY) as u8;
@@ -564,7 +564,7 @@ const ROL_ACC: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u
     state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
 };
 
-const ROL_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+const ROL_MEM: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16| {
     let mut value = bus.read(operand);
     let overflow = (value & 0x80) > 0;
     value <<= 1;
@@ -576,7 +576,7 @@ const ROL_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16
     state.set_status_field(state::SR_MASK_ZERO, value == 0);
 };
 
-const ROR_ACC: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+const ROR_ACC: OperationFn = |state: &mut State, _bus: &mut dyn Databus, _operand: u16| {
     let overflow = (state.acc & 1) > 0;
     state.acc >>= 1;
     state.acc += if state.get_status_field(state::SR_MASK_CARRY) { 128 } else { 0 };
@@ -586,7 +586,7 @@ const ROR_ACC: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u
     state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
 };
 
-const ROR_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+const ROR_MEM: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16| {
     let mut value = bus.read(operand);
     let overflow = (value & 1) > 0;
     value >>= 1;
@@ -598,7 +598,7 @@ const ROR_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16
     state.set_status_field(state::SR_MASK_ZERO, value == 0);
 };
 
-const RTI: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
+const RTI: OperationFn = |state: &mut State, bus: &mut dyn Databus, _operand: u16| {
     let status_u8 = _pull_stack(state, bus);
 
     let mut status = state::Status::from_u8(status_u8);
@@ -608,86 +608,86 @@ const RTI: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
     _pull_pc_from_stack(state, bus);
 };
 
-const RTS: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
+const RTS: OperationFn = |state: &mut State, bus: &mut dyn Databus, _operand: u16| {
     _pull_pc_from_stack(state, bus);
 };
 
-const SBC_IMM: OperationFn = |state: &mut State, _bus: &mut Databus, operand: u16| {
+const SBC_IMM: OperationFn = |state: &mut State, _bus: &mut dyn Databus, operand: u16| {
     _sbc(state, operand as u8);
 };
 
-const SBC_MEM: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+const SBC_MEM: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16| {
     _sbc(state, bus.read(operand));
 };
 
-const SEC: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+const SEC: OperationFn = |state: &mut State, _bus: &mut dyn Databus, _operand: u16| {
     state.set_status_field(state::SR_MASK_CARRY, true);
 };
 
-const SED: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+const SED: OperationFn = |state: &mut State, _bus: &mut dyn Databus, _operand: u16| {
     state.set_status_field(state::SR_MASK_DECIMAL, true);
 };
 
-const SEI: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+const SEI: OperationFn = |state: &mut State, _bus: &mut dyn Databus, _operand: u16| {
     state.set_status_field(state::SR_MASK_INTERRUPT, true);
 };
 
-const STA: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+const STA: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16| {
     bus.write(operand, state.acc);
 };
 
-const STX: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+const STX: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16| {
     bus.write(operand, state.x);
 };
 
-const STY: OperationFn = |state: &mut State, bus: &mut Databus, operand: u16| {
+const STY: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16| {
     bus.write(operand, state.y);
 };
 
-const TAX: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+const TAX: OperationFn = |state: &mut State, _bus: &mut dyn Databus, _operand: u16| {
     state.x = state.acc;
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.x >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.x == 0);
 };
 
-const TAY: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+const TAY: OperationFn = |state: &mut State, _bus: &mut dyn Databus, _operand: u16| {
     state.y = state.acc;
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.y >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.y == 0);
 };
 
-const TSX: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+const TSX: OperationFn = |state: &mut State, _bus: &mut dyn Databus, _operand: u16| {
     state.x = state.stack_pointer;
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.x >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.x == 0);
 };
 
-const TXA: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+const TXA: OperationFn = |state: &mut State, _bus: &mut dyn Databus, _operand: u16| {
     state.acc = state.x;
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
 };
 
-const TXS: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+const TXS: OperationFn = |state: &mut State, _bus: &mut dyn Databus, _operand: u16| {
     state.stack_pointer = state.x;
 };
 
-const TYA: OperationFn = |state: &mut State, _bus: &mut Databus, _operand: u16| {
+const TYA: OperationFn = |state: &mut State, _bus: &mut dyn Databus, _operand: u16| {
     state.acc = state.y;
 
     state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
     state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
 };
 
-const INTERNAL_IRQ_FN: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
+const INTERNAL_IRQ_FN: OperationFn = |state: &mut State, bus: &mut dyn Databus, _operand: u16| {
     _handle_interrupt(state, bus, cpu::IRQ_VECTOR_ADDRESS, false);
 };
 
-const INTERNAL_NMI_FN: OperationFn = |state: &mut State, bus: &mut Databus, _operand: u16| {
+const INTERNAL_NMI_FN: OperationFn = |state: &mut State, bus: &mut dyn Databus, _operand: u16| {
     _handle_interrupt(state, bus, cpu::NMI_VECTOR_ADDRESS, false);
 };
 
@@ -946,11 +946,11 @@ impl Instruction {
         Instruction { opcode, operand }
     }
 
-    pub fn execute(&self, state: &mut State, bus: &mut Databus) {
+    pub fn execute(&self, state: &mut State, bus: &mut dyn Databus) {
         let evalued_operand = self.opcode.mode.eval(state, bus, self.operand);
         self.opcode.operation.get_fn()(state, bus, evalued_operand);
     }
-    pub fn calculate_cycle_cost(&self, state: &State, bus: &Databus) -> u8 {
+    pub fn calculate_cycle_cost(&self, state: &State, bus: &dyn Databus) -> u8 {
         let mut cost = self.opcode.cycles;
 
         if self.opcode.is_branch() {
@@ -982,7 +982,7 @@ impl Instruction {
 }
 
 
-pub fn decode_instruction(bus: &Databus, address: u16) -> Instruction {
+pub fn decode_instruction(bus: &dyn Databus, address: u16) -> Instruction {
     let opcode = OPCODE_SET[bus.read(address) as usize];
 
     let operand;
@@ -994,19 +994,6 @@ pub fn decode_instruction(bus: &Databus, address: u16) -> Instruction {
     }
 
     Instruction::new(opcode, operand)
-}
-
-pub fn deassemble(bus: &Databus, start_address: u16) -> Vec<Instruction> {
-    let mut instructions: Vec<Instruction> = Vec::new();
-    let mut i = start_address;
-
-    while i < (END - 3) {
-        let instruction = decode_instruction(bus, i);
-        i += instruction.opcode.size as u16;
-        instructions.push(instruction);
-    }
-
-    instructions
 }
 
 pub static DUMMY_INSTRUCTION: Instruction = Instruction {
@@ -1084,7 +1071,7 @@ fn _compare(state: &mut State, mem: u8, operand: u8) {
     state.set_status_field(state::SR_MASK_CARRY, carry);
 }
 
-fn _handle_interrupt(state: &mut State, bus: &mut Databus, interrupt_vector: u16, b_flag: bool) {
+fn _handle_interrupt(state: &mut State, bus: &mut dyn Databus, interrupt_vector: u16, b_flag: bool) {
     _push_pc_to_stack(state, bus,state.get_next_pc());
 
     let mut status = *state.get_status_ref();
@@ -1095,7 +1082,7 @@ fn _handle_interrupt(state: &mut State, bus: &mut Databus, interrupt_vector: u16
     state.set_next_pc(bus.read_u16(interrupt_vector));
 }
 
-fn _push_pc_to_stack(state: &mut State, bus: &mut Databus, pc: u16) {
+fn _push_pc_to_stack(state: &mut State, bus: &mut dyn Databus, pc: u16) {
     let pc_hi = (pc >> 8) as u8;
     let pc_lo = (pc & 0xff) as u8;
 
@@ -1103,7 +1090,7 @@ fn _push_pc_to_stack(state: &mut State, bus: &mut Databus, pc: u16) {
     _push_stack(state, bus, pc_lo);
 }
 
-fn _pull_pc_from_stack(state: &mut State, bus: &Databus) {
+fn _pull_pc_from_stack(state: &mut State, bus: &dyn Databus) {
     let pc_lo = _pull_stack(state, bus);
     let pc_hi = _pull_stack(state, bus);
 
@@ -1111,12 +1098,12 @@ fn _pull_pc_from_stack(state: &mut State, bus: &Databus) {
     state.set_next_pc(next_pc);
 }
 
-fn _push_stack(state: &mut State, bus: &mut Databus, data: u8) {
+fn _push_stack(state: &mut State, bus: &mut dyn Databus, data: u8) {
     bus.write(cpu::STACK_OFFSET + state.stack_pointer as u16, data);
     state.dec_sp();
 }
 
-fn _pull_stack(state: &mut State, bus: &Databus) -> u8 {
+fn _pull_stack(state: &mut State, bus: &dyn Databus) -> u8 {
     state.inc_sp();
     let data = bus.read(cpu::STACK_OFFSET + state.stack_pointer as u16);
 

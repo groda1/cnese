@@ -13,7 +13,6 @@ use crate::gfx::ui::window::window::CneseWindow;
 use crate::gfx::ui::font::Font;
 
 use crate::nes::nes::NES;
-use crate::cpu::instruction;
 
 static SCREEN_WIDTH: u32 = 1400;
 static SCREEN_HEIGHT: u32 = 800;
@@ -29,7 +28,6 @@ static TEXT_COLOR_DARK: (u8, u8, u8, u8) = (175, 175, 175, 175);
 fn render(canvas: &mut Canvas<Window>,
           windows: &mut Vec<&mut CneseWindow>,
           nes: &NES) -> Result<(), String> {
-
     canvas.set_draw_color(Color::from(BACKGROUND_COLOR));
     canvas.clear();
 
@@ -43,8 +41,7 @@ fn render(canvas: &mut Canvas<Window>,
 }
 
 pub fn run(nes: &mut NES) -> Result<(), String> {
-    let instruction_offset = nes.borrow_cartridge().get_instruction_offset();
-    let deassembled_instructions = instruction::deassemble(nes.get_databus(), instruction_offset);
+    let (deassembled_instructions, instruction_offset) = nes.deassemble_prg();
 
     let font_rwops = sdl2::rwops::RWops::from_bytes(include_bytes!("resources/nesfont.fon"))?;
 
@@ -159,7 +156,7 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
 
         let sleep_time_nano = FRAMETIME_NANO as i64 - (timer.performance_counter() - time) as i64;
         if sleep_time_nano < 0 {
-            framerate  = 1_000_000_000/ (-sleep_time_nano + FRAMETIME_NANO as i64) as u32;
+            framerate = 1_000_000_000 / (-sleep_time_nano + FRAMETIME_NANO as i64) as u32;
         } else {
             framerate = FRAMERATE;
             std::thread::sleep(Duration::from_nanos(sleep_time_nano as u64));

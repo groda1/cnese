@@ -11,6 +11,7 @@ use nes::nes::NES;
 use nes::ines;
 use nes::cartridge::cartridge;
 
+
 fn main() {
     println!("CNESE");
 

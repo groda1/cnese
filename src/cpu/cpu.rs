@@ -49,7 +49,7 @@ impl Cpu {
     }
     pub fn set_nmi_lo(&mut self) { self.nmi = false; }
 
-    pub fn reset(&mut self, bus: &Databus) {
+    pub fn reset(&mut self, bus: &dyn Databus) {
         self.state.clear();
 
         let pc = bus.read_u16(RES_VECTOR_ADDRESS);
@@ -65,7 +65,7 @@ impl Cpu {
         }
     }
 
-    pub fn tick(&mut self, bus: &mut Databus) {
+    pub fn tick(&mut self, bus: &mut dyn Databus) {
         self.unspent_cycles += 1;
         self.cycle_count += 1;
 
@@ -77,7 +77,7 @@ impl Cpu {
         }
     }
 
-    pub fn tick_instruction(&mut self, bus: &mut Databus) {
+    pub fn tick_instruction(&mut self, bus: &mut dyn Databus) {
         self.cycle_count += self.next_instruction_cost as u32;
         self._execute_next_instruction(bus);
     }
@@ -86,7 +86,7 @@ impl Cpu {
     pub fn get_cycle_count(&self) -> u32 { self.cycle_count }
     pub fn get_instruction_count(&self) -> u32 { self.instruction_count }
 
-    pub fn _execute_next_instruction(&mut self, bus: &mut Databus) {
+    pub fn _execute_next_instruction(&mut self, bus: &mut dyn Databus) {
         let instruction = &self.next_instruction;
 
         self.state.set_next_pc(self.state.calculate_relative_pc(instruction.get_size() as i8));
@@ -98,7 +98,7 @@ impl Cpu {
         self.instruction_count += 1;
     }
 
-    pub fn _load_next_instruction(&mut self, bus: &Databus) {
+    pub fn _load_next_instruction(&mut self, bus: &dyn Databus) {
         if !self.nmi && self.nmi_seen_hi { // NMI
             self.nmi_seen_hi = false;
             self.next_instruction = instruction::NMI_INSTRUCTION;
