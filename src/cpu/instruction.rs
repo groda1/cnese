@@ -3,7 +3,6 @@ use super::state::State;
 use super::state;
 use super::addressing::AddressingMode;
 use super::cpu;
-use crate::nes::cartridge::cartridge::Cartridge;
 
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy)]

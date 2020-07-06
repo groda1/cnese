@@ -14,7 +14,6 @@ use crate::gfx::ui::font::Font;
 
 use crate::nes::nes::NES;
 use crate::cpu::instruction;
-use crate::nes::cartridge::cartridge::Cartridge;
 
 static SCREEN_WIDTH: u32 = 1400;
 static SCREEN_HEIGHT: u32 = 800;
@@ -117,8 +116,6 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
     right_patterntable.set_active(true);
     windows.push(&mut right_patterntable);
 
-
-
     'mainloop: loop {
         let time = timer.performance_counter();
 
@@ -152,7 +149,7 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
         }
 
         if running {
-            for i in 0..TICKS_PER_FRAME {
+            for _i in 0..TICKS_PER_FRAME {
                 nes.tick();
             }
         }

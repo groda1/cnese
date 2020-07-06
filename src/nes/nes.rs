@@ -4,8 +4,6 @@ use crate::nes::cartridge::cartridge::Cartridge;
 use crate::ppu::ppu::Ppu;
 use std::cell::{RefCell, Ref};
 use std::rc::Rc;
-use std::borrow::{Borrow, BorrowMut};
-use sdl2::render::UpdateTextureYUVError::RectNotInsideTexture;
 
 pub struct NES {
     cpu: Cpu,
@@ -28,7 +26,6 @@ impl NES {
             cartridge: cart_ridge_rc.clone(),
             _actual_framerate: 0
         }
-
     }
 
     pub fn tick(&mut self) {
@@ -58,17 +55,6 @@ impl NES {
         self.cpu.reset(&self.databus);
     }
 
-    // pub fn load_cartridge(&mut self, cartridge: Cartridge) {
-    //
-    //     self.databus.load_cartridge(cartridge);
-    //     self.reset();
-    // }
-
-    pub fn kek(&mut self) {
-
-        let fo = self.cartridge.borrow_mut();
-
-    }
     pub fn set_irq_lo(&mut self) { self.cpu.set_irq_lo(); }
     pub fn set_irq_hi(&mut self) { self.cpu.set_irq_hi(); }
     pub fn set_nmi_hi(&mut self) { self.cpu.set_nmi_hi(); }

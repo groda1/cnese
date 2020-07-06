@@ -1,0 +1,23 @@
+
+cpu
+---
+	* Undocumented opcodes
+	
+
+ppu
+---
+	* everything
+
+
+apu
+---
+	* not started
+
+
+ui
+---
+	* font color and font size should not be static
+	* rework window framework. make stuff toggleable and scrollable. tab through different windows.
+
+
+

@@ -1,11 +1,10 @@
-use sdl2::render::{Texture, TextureCreator, TextureQuery, Canvas};
+use sdl2::render::{Texture, TextureCreator, Canvas};
 use sdl2::video::{WindowContext, Window};
-use sdl2::pixels::{Color, PixelFormatEnum};
+use sdl2::pixels::{PixelFormatEnum};
 
 use crate::nes::nes::NES;
 use crate::gfx::render;
 use super::window::RenderableWindow;
-use sdl2::render::UpdateTextureYUVError::WidthMustBeMultipleOfTwoForFormat;
 
 const TEXTURE_WIDTH: u32 = 128;
 const TEXTURE_HEIGHT: u32 = 128;
@@ -58,8 +57,9 @@ impl<'a> RenderableWindow for PatternTableWindow<'a> {
             }
         }
 
-        self.texture.update(None, &texture_rgb_data, (TEXTURE_WIDTH * 3) as usize);
-        render::textured_window(canvas, x, y, self.width, self.height, 1, &self.texture );
+        self.texture.update(None, &texture_rgb_data, (TEXTURE_WIDTH * 3) as usize)
+            .map_err(|e| e.to_string())?;
+        render::textured_window(canvas, x, y, self.width, self.height, 1, &self.texture)?;
 
         Ok(())
     }

@@ -80,7 +80,7 @@ impl CartridgeTrait for NRom {
     }
 
     fn read_chr(&self, address: u16) -> u8 {
-        unimplemented!()
+        self.chr_rom[address as usize]
     }
 
     fn read_chr_slice(&self, address: u16, len: usize) -> &[u8] {

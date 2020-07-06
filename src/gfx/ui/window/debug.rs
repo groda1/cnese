@@ -4,7 +4,6 @@ use sdl2::video::Window;
 use sdl2::pixels::Color;
 
 use crate::cpu::instruction::Instruction;
-use crate::cpu::databus;
 use crate::cpu::state;
 use crate::nes::nes::NES;
 use crate::gfx::render;

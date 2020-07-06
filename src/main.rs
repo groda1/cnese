@@ -17,7 +17,6 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     let path = &args[1];
 
-
     let mut cartridge = Option::None;
 
     if path.ends_with("bin") {
@@ -43,7 +42,5 @@ fn main() {
             let _result = gfx::main::run(&mut nes).unwrap();
         }
     }
-
-
 }
 
