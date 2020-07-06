@@ -5,13 +5,11 @@ mod cpu;
 mod nes;
 mod util;
 mod gfx;
+mod ppu;
 
 use nes::nes::NES;
 use nes::ines;
 use nes::cartridge::cartridge;
-
-
-
 
 fn main() {
     println!("CNESE");
@@ -19,7 +17,7 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     let path = &args[1];
 
-    let mut nes = NES::new();
+
 
     let mut cartridge = Option::None;
 
@@ -40,10 +38,12 @@ fn main() {
             println!("No valid cartridge. Exiting..");
             return;
         },
-        Some(c) => { nes.load_cartridge(c)},
+        Some(c) => {
+            let mut nes = NES::new(c);
+            nes.reset();
+            let _result = gfx::main::run(&mut nes).unwrap();
+        }
     }
-
-    let _result = gfx::main::run(&mut nes).unwrap();
 
 
 }

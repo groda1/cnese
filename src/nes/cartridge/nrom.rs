@@ -3,7 +3,6 @@ use super::cartridge::CartridgeTrait;
 
 use crate::nes::ines;
 
-
 const PRG_RAM_SIZE: usize = 0x2000;
 const PRG_ROM_SIZE: usize = 0x8000;
 
@@ -11,6 +10,8 @@ const PRG_RAM_START: u16 = 0x6000;
 const PRG_RAM_END: u16 = 0x7FFF;
 const PRG_ROM_START: u16 = 0x8000;
 const PRG_ROM_END: u16 = 0xFFFF;
+
+const CHR_ROM_SIZE: usize = 0x2000;
 
 pub struct NRom {
     /*
@@ -21,13 +22,15 @@ pub struct NRom {
 
     prg_ram: Box<[u8; PRG_RAM_SIZE]>,
     prg_rom: Box<[u8; PRG_ROM_SIZE]>,
+    chr_rom: Box<[u8; CHR_ROM_SIZE]>
 
 }
 
 impl NRom {
-    pub fn new(ines_prg_vec: Vec<&[u8]>) -> NRom {
+    pub fn new(ines_prg_vec: Vec<&[u8]>, ines_chr_rom: &[u8]) -> NRom {
         let prg_ram = Box::new([0 as u8; PRG_RAM_SIZE]);
         let mut prg_rom = Box::new([0 as u8; PRG_ROM_SIZE]);
+        let mut chr_rom = Box::new([0 as u8; CHR_ROM_SIZE]);
 
         match ines_prg_vec.len() {
             1 => {
@@ -41,12 +44,12 @@ impl NRom {
             _ => unreachable!()
         }
 
-//        prg_rom.iter().for_each(|b| print!("{:02X}", b));
-//        println!();
+        chr_rom.copy_from_slice(ines_chr_rom);
 
         NRom {
             prg_ram,
             prg_rom,
+            chr_rom
         }
     }
 }
@@ -81,7 +84,8 @@ impl CartridgeTrait for NRom {
     }
 
     fn read_chr_slice(&self, address: u16, len: usize) -> &[u8] {
-        unimplemented!()
+        let start = address as usize;
+        &self.chr_rom[start..start + len]
     }
 
     fn get_instruction_offset(&self) -> u16 { PRG_ROM_START }

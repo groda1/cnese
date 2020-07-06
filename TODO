@@ -1,2 +1,0 @@
-
-- Remove read slice from Databus and cartridge. Replace databus with a read next intruction. Replace in cartridge with a  "get instruction memory slice" function

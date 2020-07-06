@@ -44,9 +44,9 @@ impl Cartridge {
     pub fn get_instruction_offset(&self) -> u16 { self.instruction_offset }
 }
 
-pub fn create_cartridge_from_ines(mapper: u8, prg_rom: Vec<&[u8]>) -> Result<Cartridge, String> {
+pub fn create_cartridge_from_ines(mapper: u8, prg_rom: Vec<&[u8]>, chr_rom: Vec<&[u8]>) -> Result<Cartridge, String> {
     match mapper {
-        0 => Ok(Cartridge::new(Box::new(NRom::new(prg_rom)))),
+        0 => Ok(Cartridge::new(Box::new(NRom::new(prg_rom, chr_rom[0])))),
         _ => Err(format!("Unsupported mapper: {}", mapper))
     }
 }

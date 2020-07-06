@@ -1,4 +1,6 @@
 use super::super::nes::cartridge::cartridge::Cartridge;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 pub const CARTRIDGE_SPACE_START: u16 = 0x4020;
 
@@ -32,16 +34,16 @@ $FFFE, $FFFF ... IRQ (Interrupt Request) vector
 
 pub struct Databus {
     ram: Box<[u8; RAM_SIZE]>,
-    cartridge: Option<Cartridge>,
+    cartridge : Rc<RefCell<Cartridge>>
 }
 
 impl Databus {
-    pub fn new() -> Databus {
+    pub fn new(cartridge : Rc<RefCell<Cartridge>>) -> Databus {
         let ram = [0 as u8; RAM_SIZE];
 
         Databus {
             ram: Box::new(ram),
-            cartridge: None,
+            cartridge
         }
     }
 
@@ -51,7 +53,7 @@ impl Databus {
                 self.ram[address as usize % RAM_SIZE]
             }
             CARTRIDGE_SPACE_START..=END => {
-                self.cartridge.as_ref().unwrap().read_prg(address)
+                self.cartridge.borrow().read_prg(address)
             }
             _ => unreachable!()
         }
@@ -71,21 +73,10 @@ impl Databus {
                 self.ram[address as usize % RAM_SIZE] = data;
             }
             CARTRIDGE_SPACE_START..=END => {
-                self.cartridge.as_mut().unwrap().write_prg(address, data)
+                self.cartridge.borrow_mut().write_prg(address, data)
             }
 
             _ => unreachable!()
-        }
-    }
-
-    pub fn load_cartridge(&mut self, cartridge: Cartridge) {
-        self.cartridge = Some(cartridge);
-    }
-
-    pub fn get_cartridge(&self) -> Option<&Cartridge> {
-        match &self.cartridge {
-            None => {Option::None},
-            Some(c) => { Option::Some(&c)},
         }
     }
 }

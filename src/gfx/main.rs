@@ -16,8 +16,8 @@ use crate::nes::nes::NES;
 use crate::cpu::instruction;
 use crate::nes::cartridge::cartridge::Cartridge;
 
-static SCREEN_WIDTH: u32 = 1250;
-static SCREEN_HEIGHT: u32 = 600;
+static SCREEN_WIDTH: u32 = 1400;
+static SCREEN_HEIGHT: u32 = 800;
 
 static FRAMERATE: u32 = 60;
 static FRAMETIME_NANO: u64 = 1_000_000_000 / FRAMERATE as u64;
@@ -44,9 +44,7 @@ fn render(canvas: &mut Canvas<Window>,
 }
 
 pub fn run(nes: &mut NES) -> Result<(), String> {
-    let instruction_offset = nes.get_databus()
-        .get_cartridge()
-        .map_or(0, |cart| cart.get_instruction_offset());
+    let instruction_offset = nes.borrow_cartridge().get_instruction_offset();
     let deassembled_instructions = instruction::deassemble(nes.get_databus(), instruction_offset);
 
     let font_rwops = sdl2::rwops::RWops::from_bytes(include_bytes!("resources/nesfont.fon"))?;
@@ -108,10 +106,16 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
     let mut framerate = FRAMERATE;
     let mut running = false;
 
-    let mut left_patterntable = window::create_patterntable_window(&texture_creator);
+    let mut left_patterntable = window::create_patterntable_window(&texture_creator, 256, 256, 0);
     left_patterntable.set_pos(780, 20);
     left_patterntable.set_active(true);
     windows.push(&mut left_patterntable);
+
+    let mut right_patterntable = window::create_patterntable_window(&texture_creator, 256, 256, 1);
+    right_patterntable.set_pos(1040, 20);
+    right_patterntable.set_active(true);
+    windows.push(&mut right_patterntable);
+
 
 
     'mainloop: loop {

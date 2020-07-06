@@ -67,11 +67,17 @@ pub fn open_ines(path: &String) -> Result<(Cartridge), String> {
     let mapper = (header[FLAGS_7_OFFSET] & 0xF0) + (header[FLAGS_6_OFFSET] >> 4);
 
     let mut offset = if trainer_present { TRAINER_SIZE + HEADER_SIZE } else { HEADER_SIZE };
-    let mut prg_rom_vec = Vec::new();
 
+    let mut prg_rom_vec = Vec::new();
     for _i in 0..prg_size {
         prg_rom_vec.push(&file_data[offset..offset + PRG_ROM_CHUNK_SIZE]);
         offset += PRG_ROM_CHUNK_SIZE;
+    }
+
+    let mut chr_rom_vec = Vec::new();
+    for _i in 0..chr_size {
+        chr_rom_vec.push(&file_data[offset..offset + CHR_ROM_CHUNK_SIZE]);
+        offset += CHR_ROM_CHUNK_SIZE;
     }
 
     #[cfg(debug_assertions)] {
@@ -90,7 +96,7 @@ pub fn open_ines(path: &String) -> Result<(Cartridge), String> {
 
     }
 
-    let cartridge = cartridge::create_cartridge_from_ines(mapper, prg_rom_vec)?;
+    let cartridge = cartridge::create_cartridge_from_ines(mapper, prg_rom_vec, chr_rom_vec)?;
 
     Ok(cartridge)
 }

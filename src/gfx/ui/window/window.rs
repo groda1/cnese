@@ -40,10 +40,13 @@ pub fn create_framerate_window<'a>(font: &'a Font<'a>) -> CneseWindow<'a> {
     CneseWindow::new(Box::new(counter))
 }
 
-pub fn create_patterntable_window(texture_creator : &TextureCreator<WindowContext>) -> CneseWindow {
-    let patterntable = patterntable::PatternTableWindow::new(texture_creator);
+pub fn create_patterntable_window(texture_creator: &TextureCreator<WindowContext>,
+                                  width: u32,
+                                  height: u32,
+                                  pattern_table_index: u8) -> CneseWindow {
+    let patterntable = patterntable::PatternTableWindow::new(
+        texture_creator, width, height, pattern_table_index);
     CneseWindow::new(Box::new(patterntable))
-
 }
 
 pub struct CneseWindow<'a> {
