@@ -1,23 +1,28 @@
 
 cpu
 ---
-	* Undocumented opcodes
-	
+    * Undocumented opcodes
+
 
 ppu
 ---
-	* everything
+    * everything
+    * palette
 
 
 apu
 ---
-	* not started
+    * not started
 
 
 ui
 ---
-	* font color and font size should not be static
-	* rework window framework. make stuff toggleable and scrollable. tab through different windows.
+    * BUG: deassembled instructions are broken on mirrored PRG NROM. $8000 should be equal to $C000 but
+           an instruction is decoded over the edge.
+
+    * create a nametable viewer
+    * font color and font size should not be static
+    * rework window framework. make stuff toggleable and scrollable. tab through different windows.
 
 
 

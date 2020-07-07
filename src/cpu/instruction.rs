@@ -948,6 +948,8 @@ impl Instruction {
 
     pub fn execute(&self, state: &mut State, bus: &mut dyn Databus) {
         let evalued_operand = self.opcode.mode.eval(state, bus, self.operand);
+
+        // println!("{}", self.format());
         self.opcode.operation.get_fn()(state, bus, evalued_operand);
     }
     pub fn calculate_cycle_cost(&self, state: &State, bus: &dyn Databus) -> u8 {

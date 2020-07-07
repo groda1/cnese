@@ -5,9 +5,15 @@ use super::super::nes::cartridge::cartridge::Cartridge;
 use crate::ppu::ppu::Ppu;
 
 pub const CARTRIDGE_SPACE_START: u16 = 0x4020;
+
 const INTERNAL_RAM_START: u16 = 0x0000;
 const INTERNAL_RAM_END: u16 = 0x1FFF;
+
+const NES_PPU_REGISTER_START:u16 = 0x2000;
+const NES_PPU_REGISTER_END:u16 = 0x2007;
+
 const RAM_SIZE: usize = 0x0800;
+
 pub const END: u16 = 0xFFFF;
 
 /*
@@ -57,6 +63,9 @@ impl crate::cpu::databus::Databus for NesDatabus {
             INTERNAL_RAM_START..=INTERNAL_RAM_END => {
                 self.ram[address as usize % RAM_SIZE]
             }
+            NES_PPU_REGISTER_START..=NES_PPU_REGISTER_END => {
+                self.ppu.borrow_mut().read_register(address)
+            }
             CARTRIDGE_SPACE_START..=END => {
                 self.cartridge.borrow().read_prg(address)
             }
@@ -78,7 +87,10 @@ impl crate::cpu::databus::Databus for NesDatabus {
                 self.ram[address as usize % RAM_SIZE] = data;
             }
             CARTRIDGE_SPACE_START..=END => {
-                self.cartridge.borrow_mut().write_prg(address, data)
+                self.cartridge.borrow_mut().write_prg(address, data);
+            }
+            NES_PPU_REGISTER_START..=NES_PPU_REGISTER_END => {
+                self.ppu.borrow_mut().write_register(address, data);
             }
 
             _ => unreachable!()

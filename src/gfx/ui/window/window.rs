@@ -42,11 +42,16 @@ pub fn create_framerate_window<'a>(font: &'a Font<'a>) -> CneseWindow<'a> {
 
 pub fn create_patterntable_window(texture_creator: &TextureCreator<WindowContext>,
                                   width: u32,
-                                  height: u32,
-                                  pattern_table_index: u8) -> CneseWindow {
+                                  height: u32) -> CneseWindow {
     let patterntable = patterntable::PatternTableWindow::new(
-        texture_creator, width, height, pattern_table_index);
+        texture_creator, width, height, 0);
     CneseWindow::new(Box::new(patterntable))
+}
+
+pub fn create_ppu_window<'a>(font: &'a Font<'a>, secondary_font: &'a Font<'a>) -> CneseWindow<'a> {
+    let ppu_window = debug::PpuWindow::new(font, secondary_font);
+
+    CneseWindow::new(Box::new(ppu_window))
 }
 
 pub struct CneseWindow<'a> {

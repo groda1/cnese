@@ -43,6 +43,8 @@ fn render(canvas: &mut Canvas<Window>,
 pub fn run(nes: &mut NES) -> Result<(), String> {
     let (deassembled_instructions, instruction_offset) = nes.deassemble_prg();
 
+    println!("inst {:04X}", instruction_offset);
+
     let font_rwops = sdl2::rwops::RWops::from_bytes(include_bytes!("resources/nesfont.fon"))?;
 
     let sdl_context = sdl2::init()?;
@@ -78,6 +80,11 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
     register_window.set_active(true);
     windows.push(&mut register_window);
 
+    let mut ppu_window = window::create_ppu_window(&font, &dark_font);
+    ppu_window.set_pos(20, 600);
+    ppu_window.set_active(true);
+    windows.push(&mut ppu_window);
+
     let mut zeropage_window = window::create_memory_window(&font, &dark_font, 0, 256, 16);
     zeropage_window.set_pos(330, 20);
     zeropage_window.set_active(true);
@@ -103,15 +110,10 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
     let mut framerate = FRAMERATE;
     let mut running = false;
 
-    let mut left_patterntable = window::create_patterntable_window(&texture_creator, 256, 256, 0);
-    left_patterntable.set_pos(780, 20);
-    left_patterntable.set_active(true);
-    windows.push(&mut left_patterntable);
-
-    let mut right_patterntable = window::create_patterntable_window(&texture_creator, 256, 256, 1);
-    right_patterntable.set_pos(1040, 20);
-    right_patterntable.set_active(true);
-    windows.push(&mut right_patterntable);
+    let mut patterntable = window::create_patterntable_window(&texture_creator, 256, 256);
+    patterntable.set_pos(780, 20);
+    patterntable.set_active(true);
+    windows.push(&mut patterntable);
 
     'mainloop: loop {
         let time = timer.performance_counter();

@@ -59,7 +59,6 @@ impl NES {
     }
 
     pub fn deassemble_prg(&self) -> (Vec<Instruction>, u16) {
-
         let start_address = self.cartridge.borrow().get_instruction_offset();
 
         let mut instructions: Vec<Instruction> = Vec::new();

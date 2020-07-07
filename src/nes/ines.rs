@@ -96,7 +96,7 @@ pub fn open_ines(path: &String) -> Result<(Cartridge), String> {
 
     }
 
-    let cartridge = cartridge::create_cartridge_from_ines(mapper, prg_rom_vec, chr_rom_vec)?;
+    let cartridge = cartridge::create_cartridge_from_ines(mapper, prg_rom_vec, chr_rom_vec, mirroring)?;
 
     Ok(cartridge)
 }

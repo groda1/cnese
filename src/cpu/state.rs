@@ -18,7 +18,9 @@ impl Status {
         Status { status }
     }
 
-    pub fn get_as_u8(&self) -> u8 { self.status }
+    pub fn get_as_u8(&self) -> u8 {
+        self.status
+    }
 
     pub fn get(&self, mask: u8) -> bool {
         self.status & mask > 0

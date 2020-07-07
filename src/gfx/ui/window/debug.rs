@@ -20,8 +20,8 @@ static ROW_OFFSET_SMALL: i32 = 10;
 
 static INSTRUCTION_WINDOW_LINE_WRAP_OFFSET: usize = 3;
 static INSTRUCTION_WINDOW_WIDTH: u32 = 300;
-
 static REGISTER_WINDOW_WIDTH: u32 = 300;
+const PPU_WINDOW_WIDTH: u32 = 300;
 
 static MEMORY_WINDOW_WIDTH: u32 = 440;
 
@@ -352,6 +352,124 @@ impl<'a> RenderableWindow for RegisterWindow<'a> {
                             x + FRAME_PADDING + (STATUS_FLAG_OFFSET * 7),
                             y + FRAME_PADDING + ROW_OFFSET * 3,
                             "C",
+        )?;
+
+        Ok(())
+    }
+}
+
+
+pub struct PpuWindow<'a> {
+    font: &'a Font<'a>,
+    secondary_font: &'a Font<'a>,
+}
+
+impl<'a> PpuWindow<'a> {
+    pub fn new(font: &'a Font<'a>,
+               secondary_font: &'a Font<'a>) -> PpuWindow<'a> {
+        PpuWindow { font, secondary_font }
+    }
+}
+
+impl<'a> RenderableWindow for PpuWindow<'a> {
+    fn render(&mut self,
+              canvas: &mut Canvas<Window>,
+              x: i32,
+              y: i32,
+              nes: &NES) -> Result<(), String> {
+
+        let ppuctrl = nes.borrow_ppu().get_ppuctrl();
+        let ppumask = nes.borrow_ppu().get_ppuctrl();
+        let ppustatus = nes.borrow_ppu().get_ppustatus();
+        let oamaddr = nes.borrow_ppu().get_oamaddr();
+        let ppuscroll = nes.borrow_ppu().get_ppuscroll();
+        let ppuaddr = nes.borrow_ppu().get_ppuaddr();
+
+        render::window(canvas,
+                       x,
+                       y,
+                       PPU_WINDOW_WIDTH,
+                       (FRAME_PADDING * 2 + (ROW_OFFSET * 6)) as u32,
+                       Color::from(FRAME_BORDER_COLOR),
+                       Color::from(FRAME_BACKGROUND_COLOR),
+        )?;
+
+        render::render_text(canvas,
+                            self.font,
+                            x + FRAME_PADDING,
+                            y + FRAME_PADDING,
+                            "PPUCTRL:",
+        )?;
+        render::render_text(canvas,
+                            self.secondary_font,
+                            x + FRAME_PADDING,
+                            y + FRAME_PADDING,
+                            format!("          ${:02X}", ppuctrl).as_str(),
+        )?;
+
+        render::render_text(canvas,
+                            self.font,
+                            x + FRAME_PADDING,
+                            y + FRAME_PADDING + ROW_OFFSET,
+                            "PPUMASK:",
+        )?;
+        render::render_text(canvas,
+                            self.secondary_font,
+                            x + FRAME_PADDING,
+                            y + FRAME_PADDING + ROW_OFFSET,
+                            format!("          ${:02X}", ppumask).as_str(),
+        )?;
+
+        render::render_text(canvas,
+                            self.font,
+                            x + FRAME_PADDING,
+                            y + FRAME_PADDING + ROW_OFFSET * 2,
+                            "PPUSTATUS:",
+        )?;
+        render::render_text(canvas,
+                            self.secondary_font,
+                            x + FRAME_PADDING,
+                            y + FRAME_PADDING + ROW_OFFSET * 2,
+                            format!("          ${:02X}", ppustatus).as_str(),
+        )?;
+
+        render::render_text(canvas,
+                            self.font,
+                            x + FRAME_PADDING,
+                            y + FRAME_PADDING + ROW_OFFSET * 3,
+                            "OAMADDR:",
+        )?;
+        render::render_text(canvas,
+                            self.secondary_font,
+                            x + FRAME_PADDING,
+                            y + FRAME_PADDING + ROW_OFFSET * 3,
+                            format!("          ${:02X}", oamaddr).as_str(),
+        )?;
+
+        render::render_text(canvas,
+                            self.font,
+                            x + FRAME_PADDING,
+                            y + FRAME_PADDING + ROW_OFFSET * 4,
+                            "PPUSCROLL:",
+        )?;
+        render::render_text(canvas,
+                            self.secondary_font,
+                            x + FRAME_PADDING,
+                            y + FRAME_PADDING + ROW_OFFSET * 4,
+                            format!("          ${:04X}", ppuscroll).as_str(),
+        )?;
+
+        render::render_text(canvas,
+                            self.font,
+                            x + FRAME_PADDING,
+                            y + FRAME_PADDING + ROW_OFFSET * 5,
+                            "PPUADDR:",
+        )?;
+        render::render_text(canvas,
+                            self.secondary_font,
+                            x + FRAME_PADDING,
+                            y + FRAME_PADDING + ROW_OFFSET * 5,
+                            format!("          ${:04X}", ppuaddr).as_str(),
         )?;
 
         Ok(())

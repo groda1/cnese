@@ -13,7 +13,9 @@ pub struct PatternTableWindow<'a> {
     width: u32,
     height: u32,
     pattern_table_index: u8,
-    texture: Texture<'a>,
+    left_texture: Texture<'a>,
+    right_texture : Texture<'a>
+
 }
 
 impl<'a> PatternTableWindow<'a> {
@@ -21,22 +23,17 @@ impl<'a> PatternTableWindow<'a> {
                width: u32,
                height: u32,
                pattern_table_index: u8) -> PatternTableWindow {
-        let texture = texture_creator
+
+        let left_texture = texture_creator
+            .create_texture_streaming(PixelFormatEnum::RGB24, TEXTURE_WIDTH, TEXTURE_HEIGHT).unwrap();
+        let right_texture = texture_creator
             .create_texture_streaming(PixelFormatEnum::RGB24, TEXTURE_WIDTH, TEXTURE_HEIGHT).unwrap();
 
-        PatternTableWindow { texture, width, height, pattern_table_index }
+        PatternTableWindow { left_texture,right_texture, width, height, pattern_table_index }
     }
-}
 
-
-impl<'a> RenderableWindow for PatternTableWindow<'a> {
-    fn render(&mut self,
-              canvas: &mut Canvas<Window>,
-              x: i32,
-              y: i32,
-              nes: &NES) -> Result<(), String> {
-
-        let pixel_data = nes.borrow_ppu().patterntable_to_texture_data(self.pattern_table_index);
+    fn _update_texture(&mut self, nes: &NES, pattern_table_index: u8) -> Result<(), String>{
+        let pixel_data = nes.borrow_ppu().patterntable_to_texture_data(pattern_table_index);
         let mut texture_rgb_data = [0 as u8; (128 * 128 * 3) as usize];
 
         for (i, val) in pixel_data.iter().enumerate() {
@@ -57,9 +54,31 @@ impl<'a> RenderableWindow for PatternTableWindow<'a> {
             }
         }
 
-        self.texture.update(None, &texture_rgb_data, (TEXTURE_WIDTH * 3) as usize)
-            .map_err(|e| e.to_string())?;
-        render::textured_window(canvas, x, y, self.width, self.height, 1, &self.texture)?;
+        if pattern_table_index == 0 {
+            self.left_texture.update(None, &texture_rgb_data, (TEXTURE_WIDTH * 3) as usize)
+                .map_err(|e| e.to_string())?;
+        } else {
+            self.right_texture.update(None, &texture_rgb_data, (TEXTURE_WIDTH * 3) as usize).map_err(|e| e.to_string())?;
+        }
+
+        Ok(())
+    }
+}
+
+
+impl<'a> RenderableWindow for PatternTableWindow<'a> {
+
+    fn render(&mut self,
+              canvas: &mut Canvas<Window>,
+              x: i32,
+              y: i32,
+              nes: &NES) -> Result<(), String> {
+
+        self._update_texture(nes, 0)?;
+        self._update_texture(nes, 1)?;
+
+        render::textured_window(canvas, x, y, self.width, self.height, &self.left_texture)?;
+        render::textured_window(canvas, x + self.width as i32 + 5, y, self.width, self.height, &self.right_texture)?;
 
         Ok(())
     }

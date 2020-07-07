@@ -88,7 +88,6 @@ pub fn textured_window(canvas: &mut Canvas<Window>,
                        y: i32,
                        w: u32,
                        h: u32,
-                       _border_width: u32,
                        texture: &Texture) -> Result<(), String> {
     _render_textured_rect(canvas, texture, x, y, w, h)?;
 

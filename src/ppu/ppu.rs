@@ -1,28 +1,66 @@
-use crate::nes::cartridge::cartridge::Cartridge;
 use std::rc::Rc;
 use std::cell::RefCell;
+
+use crate::nes::cartridge::cartridge::Cartridge;
+use super::register;
 
 const PATTERN_TABLE_SIZE: usize = 0x1000;
 
 
-pub trait PpuInterface {
-
-}
-
 pub struct Ppu {
-    cartridge: Rc<RefCell<Cartridge>>
+    cartridge: Rc<RefCell<Cartridge>>,
+    ppuctrl: u8,
+    ppumask: u8,
+    ppustatus: u8,
+
+    oamaddr: u8,
+    // TODO oamdata
+
+    ppuscroll: u16,
+    ppuaddr:u16,
+    latch: Option<u8>,
+
+
 }
 
 impl Ppu {
     pub fn new(cartridge: Rc<RefCell<Cartridge>>) -> Ppu {
-        Ppu { cartridge }
+        Ppu {
+            cartridge,
+            ppuctrl: 0,
+            ppumask: 0,
+            ppustatus: 0,
+            oamaddr: 0,
+            ppuscroll: 0,
+            ppuaddr: 0,
+            latch: None
+        }
     }
 
-    pub fn write(address: u16, data: u8) {
-        unimplemented!()
+    pub fn write_register(&mut self, address: u16, data: u8) {
+        match address % register::REGISTER_SIZE {
+
+            register::PPUCTRL_OFFSET => {
+                self.ppuctrl = data;
+            }
+            register::PPUMASK_OFFSET => {
+                self.ppumask = data;
+            }
+
+            _=> unreachable!()
+        }
     }
-    pub fn read(address: u16) -> u8 {
-        unimplemented!()
+    pub fn read_register(&mut self, address: u16) -> u8 {
+        match address % register::REGISTER_SIZE {
+            register::PPUSTATUS_OFFSET => {
+                let status = self.ppustatus;
+                // TODO CLEAR VBLANK
+                self.latch = None;
+
+                status
+            }
+            _=> unreachable!()
+        }
     }
 
     pub fn patterntable_to_texture_data(&self, pattern_table_index: u8) -> [u8; 16384] {
@@ -66,5 +104,52 @@ impl Ppu {
 
         // unreachable!();
         target
+    }
+
+    fn _read_memory(&self, address:u16) -> u8 {
+        match address {
+            0..=0x1FFF => {
+                self.cartridge.borrow().read_chr(address)
+            }
+            0x2000..=0x2FFF => {
+                unimplemented!()
+            }
+            0x3000..=0x3EFF => {
+                // TODO ?
+                unimplemented!()
+            }
+            0x3F00..=0x3FFF => {
+                // TODO Palette RAM indexes
+                // TODO Mirror
+                unimplemented!()
+            }
+            _ => {
+                unreachable!()
+            }
+        }
+    }
+
+    pub fn get_ppuctrl(&self) -> u8 {
+        self.ppuctrl
+    }
+
+    pub fn get_ppumask(&self) -> u8 {
+        self.ppumask
+    }
+
+    pub fn get_ppustatus(&self) -> u8 {
+        self.ppustatus
+    }
+
+    pub fn get_oamaddr(&self) -> u8 {
+        self.oamaddr
+    }
+
+    pub fn get_ppuscroll(&self) -> u16 {
+        self.ppuscroll
+    }
+
+    pub fn get_ppuaddr(&self )-> u16 {
+        self.ppuaddr
     }
 }
