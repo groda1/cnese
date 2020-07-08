@@ -47,6 +47,7 @@ impl Cartridge {
     }
 
     pub fn get_instruction_offset(&self) -> u16 { self.instruction_offset }
+    pub fn get_mirroring(&self) -> Mirroring { self.mirroring }
 }
 
 pub fn create_cartridge_from_ines(mapper: u8, prg_rom: Vec<&[u8]>,

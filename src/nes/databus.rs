@@ -58,11 +58,25 @@ impl NesDatabus {
         }
     }
 
+    // TODO move to apu/io controller
     fn _write_apu_io(&mut self, address: u16, data: u8) {
 
         if address == 0x4014 {
             println!("OAMDMA")
+        } else if address == 0x4016 {
+            println!("CONTROLLER POLL {}", data)
         }
+    }
+
+    // TODO move to apu/io controller
+    fn _read_apu_io(&self, address: u16) -> u8 {
+
+        if address == 0x4016 {
+            0xff
+        }
+         else {
+             unreachable!()
+         }
     }
 
 }
@@ -76,10 +90,16 @@ impl crate::cpu::databus::Databus for NesDatabus {
             NES_PPU_REGISTER_START..=NES_PPU_REGISTER_END => unsafe {
                 (*self.ppu).read_register(address)
             }
+            NES_APU_IO_REGISTERS_START..=NES_APU_IO_REGISTERS_END => {
+                self._read_apu_io(address)
+            }
             CARTRIDGE_SPACE_START..=END => unsafe {
                 (*self.cartridge).read_prg(address)
             }
-            _ => unreachable!()
+            _ => {
+                println!("CRASH Databus::read {:02x}", address);
+                unreachable!()
+            }
         }
     }
 

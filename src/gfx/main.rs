@@ -141,6 +141,12 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
                     nes.tick_cpu_instruction();
                     render(&mut canvas, &mut windows, nes)?;
                 }
+                Event::KeyDown { keycode : Some(Keycode::L), .. } => {
+                    // TODO Should be one line precisely
+                    for _i in 0..115 {
+                        nes.tick();
+                    }
+                }
                 Event::KeyDown { keycode: Some(Keycode::I), repeat: false, .. } => {
                     nes.set_irq_lo();
                 }

@@ -1,5 +1,7 @@
 use crate::nes::cartridge::cartridge::Cartridge;
 use super::register;
+use crate::ppu::register::{PpuStatus, PpuCtrl, PpuStatusTrait, PpuCtrlTrait};
+use crate::ppu::nametable::NametableMemory;
 
 const PATTERN_TABLE_SIZE: usize = 0x1000;
 
@@ -20,9 +22,9 @@ const FRAMEBUFFER_SIZE: usize = FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT;
 
 pub struct Ppu {
     cartridge_ptr: *mut Cartridge,
-    ppuctrl: u8,
+    ppuctrl: PpuCtrl,
     ppumask: u8,
-    ppustatus: u8,
+    ppustatus: PpuStatus,
 
     oamaddr: u8,
     // TODO oamdata
@@ -30,6 +32,8 @@ pub struct Ppu {
     ppuscroll: u16,
     ppuaddr: u16,
     latch: Option<u8>,
+
+    nametable_memory: NametableMemory,
 
     // rendering variables
     scanline: u16,
@@ -42,6 +46,8 @@ pub struct Ppu {
 
 impl Ppu {
     pub fn new(cartridge_ptr: *mut Cartridge) -> Ppu {
+        let cartridge = unsafe { &*cartridge_ptr };
+
         Ppu {
             cartridge_ptr,
             ppuctrl: 0,
@@ -51,6 +57,7 @@ impl Ppu {
             ppuscroll: 0,
             ppuaddr: 0,
             latch: None,
+            nametable_memory: NametableMemory::new(cartridge.get_mirroring()),
 
             scanline: SCANLINE_PRE_RENDER,
             scanline_cycle: 0,
@@ -70,8 +77,14 @@ impl Ppu {
             register::OAMADDR_OFFSET => {
                 self.oamaddr = data;
             }
+            register::PPUSCROLL_OFFSET => {
+                self._write_ppuscroll(data);
+            }
             register::PPUADDR_OFFSET => {
                 self._write_ppuaddr(data);
+            }
+            register::PPUDATA_OFFSET => {
+                self._write_ppudata(data);
             }
             _ => {
                 println!("CRASH ppu::write_register ${:04X} = ${:02X}", address, data);
@@ -83,24 +96,52 @@ impl Ppu {
         match address % register::REGISTER_SIZE {
             register::PPUSTATUS_OFFSET => {
                 let status = self.ppustatus;
-                // TODO CLEAR VBLANK
+                self.ppustatus.clear_vblank();
                 self.latch = None;
 
                 status
             }
-            _ => unreachable!()
+            register::PPUDATA_OFFSET => {
+                self._read_ppudata()
+            }
+            _ => {
+                println!("CRASH ppu::read_register ${:04X}", address);
+                unreachable!()
+            }
         }
     }
 
-    pub fn _write_ppuaddr(&mut self, data :u8) {
+    fn _write_ppuaddr(&mut self, data: u8) {
         match self.latch {
             Some(hi) => {
-                self.ppuaddr = (hi as u16) << 8 + data as u16;
+                self.ppuaddr = ((hi as u16) << 8) + data as u16;
             }
             None => {
                 self.latch = Some(data);
             }
         }
+    }
+
+    fn _write_ppuscroll(&mut self, data: u8) {
+        match self.latch {
+            Some(hi) => {
+                self.ppuscroll = ((hi as u16) << 8) + data as u16;
+            }
+            None => {
+                self.latch = Some(data);
+            }
+        }
+    }
+
+    fn _read_ppudata(&mut self) -> u8 {
+        let data = self.nametable_memory.read(self.ppuaddr);
+        self.ppuaddr += self.ppuctrl.vram_address_increment();
+        data
+    }
+
+    fn _write_ppudata(&mut self, data: u8) {
+        self.nametable_memory.write(self.ppuaddr, data);
+        self.ppuaddr += self.ppuctrl.vram_address_increment();
     }
 
     pub fn _output_framebuffer_pixel(&mut self) {
@@ -116,7 +157,14 @@ impl Ppu {
         }
     }
 
-    fn _process_render_scanline(&mut self) {
+    fn _prerender_scanline(&mut self) {
+        if self.scanline_cycle == 1 {
+            self.ppustatus.clear_vblank();
+        }
+        self._render_scanline();
+    }
+
+    fn _render_scanline(&mut self) {
         let cycle_mod = self.scanline_cycle % 8;
 
         match self.scanline_cycle {
@@ -170,17 +218,25 @@ impl Ppu {
         }
     }
 
+    fn _vblank_scanline(&mut self) {
+        if self.scanline_cycle == 1 {
+            self.ppustatus.set_vblank();
+        }
+    }
+
     pub fn tick(&mut self) -> bool {
         match self.scanline {
             // Pre-render scanline
             SCANLINE_PRE_RENDER => {
-                self._process_render_scanline();
+                self._prerender_scanline();
             }
             SCANLINE_VISIBLE_START..=SCANLINE_VISIBLE_END => {
-                self._process_render_scanline();
+                self._render_scanline();
             }
             SCANLINE_POST_RENDER => {}
-            SCANLINE_VBLANK_START..=SCANLINE_VBLANK_END => {}
+            SCANLINE_VBLANK_START..=SCANLINE_VBLANK_END => {
+                self._vblank_scanline();
+            }
             _ => { unreachable!() }
         }
 
@@ -193,7 +249,6 @@ impl Ppu {
         } else {
             false
         }
-
     }
 
     fn _increment_scanline_cycle(&mut self) {
@@ -208,7 +263,7 @@ impl Ppu {
             self.scanline += 1;
         }
 
-        if self.scanline >= SCANLINE_PRE_RENDER {
+        if self.scanline > SCANLINE_PRE_RENDER {
             self.scanline = 0;
             self.framecount += 1;
         }
@@ -260,6 +315,26 @@ impl Ppu {
                 let cartridge = unsafe { &mut *self.cartridge_ptr };
                 cartridge.read_chr(address)
             }
+            0x2000..=0x2FFF => {
+                unimplemented!()
+            }
+            0x3000..=0x3EFF => {
+                // TODO ?
+                unimplemented!()
+            }
+            0x3F00..=0x3FFF => {
+                // TODO Palette RAM indexes
+                // TODO Mirror
+                unimplemented!()
+            }
+            _ => {
+                unreachable!()
+            }
+        }
+    }
+
+    fn _write_memory(&self, address: u16) -> u8 {
+        match address {
             0x2000..=0x2FFF => {
                 unimplemented!()
             }

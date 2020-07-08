@@ -1,4 +1,3 @@
-
 pub const REGISTER_SIZE: u16 = 8;
 
 // PPUCTRL (write)
@@ -28,23 +27,28 @@ const PPUCTRL_SPRITE_SIZE_MASK: u8 = 1 << 5;
 const PPUCTRL_PPU_MASTER_SLAVE_SELECT_MASK: u8 = 1 << 6;
 const PPUCTRL_GENERATE_NMI_MASK: u8 = 1 << 7;
 
-trait PpuCtrl {
+pub trait PpuCtrlTrait {
     fn base_nametable_addr(&self) -> u16;
-    fn vram_address_increment(&self) -> u8;
+    fn vram_address_increment(&self) -> u16;
     fn sprite_pattern_table_addr(&self) -> u8;
     fn bg_pattern_table_addr(&self) -> u8;
     fn sprite_size(&self) -> u8;
     fn ppu_master_slave_select(&self) -> u8;
     fn generate_nmi(&self) -> u8;
 }
+pub type PpuCtrl = u8;
 
-impl PpuCtrl for u8 {
+impl PpuCtrlTrait for PpuCtrl {
     fn base_nametable_addr(&self) -> u16 {
         unimplemented!()
     }
 
-    fn vram_address_increment(&self) -> u8 {
-        unimplemented!()
+    fn vram_address_increment(&self) -> u16 {
+        if (*self & PPUCTRL_VRAM_ADDRESS_INCREMENT_MASK) > 0 {
+            32
+        } else {
+            1
+        }
     }
 
     fn sprite_pattern_table_addr(&self) -> u8 {
@@ -69,7 +73,7 @@ impl PpuCtrl for u8 {
 }
 
 // PPUMASK (write)
-pub const PPUMASK_OFFSET:u16 = 0x1;
+pub const PPUMASK_OFFSET: u16 = 0x1;
 // 7  bit  0
 // ---- ----
 // BGRs bMmG
@@ -119,17 +123,32 @@ const PPUSTATUS_SPRITE_OVERFLOW_MASK: u8 = 1 << 5;
 const PPUSTATUS_SPRITE_0_MASK: u8 = 1 << 6;
 const PPUSTATUS_VBLANK_MASK: u8 = 1 << 7;
 
+pub trait PpuStatusTrait {
+    fn set_vblank(&mut self);
+    fn clear_vblank(&mut self);
+}
+pub type PpuStatus = u8;
+
+impl PpuStatusTrait for PpuStatus {
+    fn set_vblank(&mut self) {
+        *self |= PPUSTATUS_VBLANK_MASK;
+    }
+
+    fn clear_vblank(&mut self) {
+        *self &= !PPUSTATUS_VBLANK_MASK;
+    }
+}
 
 // OAMADDR (write)
 pub const OAMADDR_OFFSET: u16 = 3;
 // OAMDATA (read/write)
-pub const OAMDATA_OFFSET :u16 = 4;
+pub const OAMDATA_OFFSET: u16 = 4;
 
 // PPUSCROLL ( write x2)
-pub const PPUSCROLL_OFFSET : u16 = 5;
+pub const PPUSCROLL_OFFSET: u16 = 5;
 
 // PPUADDR (write x2)
-pub const PPUADDR_OFFSET : u16 = 6;
+pub const PPUADDR_OFFSET: u16 = 6;
 
 // PPUDATA  (read/write)
-pub const PPUDATA_OFFSET : u16 = 7;
+pub const PPUDATA_OFFSET: u16 = 7;
