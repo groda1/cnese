@@ -6,6 +6,7 @@ use crate::cpu::instruction::Instruction;
 
 use super::debug;
 use super::patterntable;
+use super::ppu_framebuffer;
 use super::super::font::Font;
 
 pub fn create_instruction_window<'a>(font: &'a Font<'a>,
@@ -46,6 +47,14 @@ pub fn create_patterntable_window(texture_creator: &TextureCreator<WindowContext
     let patterntable = patterntable::PatternTableWindow::new(
         texture_creator, width, height, 0);
     CneseWindow::new(Box::new(patterntable))
+}
+
+pub fn create_framebuffer_window(texture_creator: &TextureCreator<WindowContext>,
+                                  width: u32,
+                                  height: u32) -> CneseWindow {
+    let framebuffer = ppu_framebuffer::FramebufferWindow::new(
+        texture_creator, width, height);
+    CneseWindow::new(Box::new(framebuffer))
 }
 
 pub fn create_ppu_window<'a>(font: &'a Font<'a>, secondary_font: &'a Font<'a>) -> CneseWindow<'a> {

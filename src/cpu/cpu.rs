@@ -77,9 +77,12 @@ impl Cpu {
         }
     }
 
-    pub fn tick_instruction(&mut self, bus: &mut dyn Databus) {
-        self.cycle_count += self.next_instruction_cost as u32;
+    pub fn tick_instruction(&mut self, bus: &mut dyn Databus) -> u8 {
+        let cycles = self.next_instruction_cost;
+        self.cycle_count += cycles as u32;
         self._execute_next_instruction(bus);
+
+        cycles
     }
 
     pub fn get_state(&self) -> &State { &self.state }

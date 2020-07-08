@@ -12,6 +12,9 @@ const INTERNAL_RAM_END: u16 = 0x1FFF;
 const NES_PPU_REGISTER_START:u16 = 0x2000;
 const NES_PPU_REGISTER_END:u16 = 0x2007;
 
+const NES_APU_IO_REGISTERS_START:u16 = 0x4000;
+const NES_APU_IO_REGISTERS_END:u16 = 0x4017;
+
 const RAM_SIZE: usize = 0x0800;
 
 pub const END: u16 = 0xFFFF;
@@ -39,14 +42,13 @@ $FFFE, $FFFF ... IRQ (Interrupt Request) vector
 
 pub struct NesDatabus {
     ram: Box<[u8; RAM_SIZE]>,
-    cartridge: Rc<RefCell<Cartridge>>,
-    ppu: Rc<RefCell<Ppu>>
+    cartridge: *mut Cartridge,
+    ppu: *mut Ppu
 
 }
 
 impl NesDatabus {
-    pub fn new(cartridge: Rc<RefCell<Cartridge>>,
-               ppu: Rc<RefCell<Ppu>>) -> NesDatabus {
+    pub fn new(cartridge: *mut Cartridge, ppu: *mut Ppu) -> NesDatabus {
         let ram = [0 as u8; RAM_SIZE];
 
         NesDatabus {
@@ -55,6 +57,14 @@ impl NesDatabus {
             ppu,
         }
     }
+
+    fn _write_apu_io(&mut self, address: u16, data: u8) {
+
+        if address == 0x4014 {
+            println!("OAMDMA")
+        }
+    }
+
 }
 
 impl crate::cpu::databus::Databus for NesDatabus {
@@ -63,11 +73,11 @@ impl crate::cpu::databus::Databus for NesDatabus {
             INTERNAL_RAM_START..=INTERNAL_RAM_END => {
                 self.ram[address as usize % RAM_SIZE]
             }
-            NES_PPU_REGISTER_START..=NES_PPU_REGISTER_END => {
-                self.ppu.borrow_mut().read_register(address)
+            NES_PPU_REGISTER_START..=NES_PPU_REGISTER_END => unsafe {
+                (*self.ppu).read_register(address)
             }
-            CARTRIDGE_SPACE_START..=END => {
-                self.cartridge.borrow().read_prg(address)
+            CARTRIDGE_SPACE_START..=END => unsafe {
+                (*self.cartridge).read_prg(address)
             }
             _ => unreachable!()
         }
@@ -86,14 +96,22 @@ impl crate::cpu::databus::Databus for NesDatabus {
             INTERNAL_RAM_START..=INTERNAL_RAM_END => {
                 self.ram[address as usize % RAM_SIZE] = data;
             }
-            CARTRIDGE_SPACE_START..=END => {
-                self.cartridge.borrow_mut().write_prg(address, data);
+            CARTRIDGE_SPACE_START..=END => unsafe {
+                (*self.cartridge).write_prg(address, data);
             }
-            NES_PPU_REGISTER_START..=NES_PPU_REGISTER_END => {
-                self.ppu.borrow_mut().write_register(address, data);
+            NES_PPU_REGISTER_START..=NES_PPU_REGISTER_END => unsafe {
+                (*self.ppu).write_register(address, data);
+            }
+            NES_APU_IO_REGISTERS_START..=NES_APU_IO_REGISTERS_END => {
+                self._write_apu_io(address, data);
             }
 
-            _ => unreachable!()
+            _ => {
+                println!("CRASH: write ${:04X} = ${:02X}", address, data);
+                unreachable!()
+            }
         }
     }
+
+
 }

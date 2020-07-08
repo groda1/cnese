@@ -11,40 +11,52 @@ use crate::cpu::instruction::Instruction;
 
 pub struct NES {
     cpu: Cpu,
-    ppu: Rc<RefCell<Ppu>>,
+    ppu: Box<Ppu>,
     databus: NesDatabus,
-    cartridge: Rc<RefCell<Cartridge>>,
+    cartridge: Box<Cartridge>,
 
     _actual_framerate: u32
 }
 
 impl NES {
     pub fn new(cartridge : Cartridge) -> NES {
+        let mut cartridge = Box::new(cartridge);
+        let cartridge_ptr: *mut Cartridge = &mut *cartridge;
 
-        let cartridge_rc = Rc::new(RefCell::new(cartridge));
-        let ppu_pc = Rc::new(RefCell::new(Ppu::new(cartridge_rc.clone())));
+        let mut ppu = Box::new(Ppu::new(cartridge_ptr));
+        let ppu_ptr: *mut Ppu = &mut *ppu;
 
         NES {
             cpu: Cpu::new(),
-            ppu: ppu_pc.clone(),
-            databus: NesDatabus::new(cartridge_rc.clone(), ppu_pc.clone()),
-            cartridge: cartridge_rc.clone(),
+            ppu,
+            databus: NesDatabus::new(cartridge_ptr, ppu_ptr),
+            cartridge,
             _actual_framerate: 0
         }
     }
 
-    pub fn tick(&mut self) {
+    pub fn tick(&mut self) -> bool {
         self.cpu.tick(&mut self.databus);
+
+        let mut frame_done = false;
+        frame_done |= self.ppu.tick();
+        frame_done |= self.ppu.tick();
+        frame_done |= self.ppu.tick();
+
+        frame_done
     }
 
     pub fn tick_cpu_instruction(&mut self) {
-        self.cpu.tick_instruction(&mut self.databus);
+        let cycles = self.cpu.tick_instruction(&mut self.databus);
+        for _i in 0..cycles * 3 {
+            self.ppu.tick();
+        }
     }
 
     pub fn get_databus(&self) -> &dyn Databus { &self.databus }
 
-    pub fn borrow_ppu(&self) -> Ref<Ppu> {
-        RefCell::borrow(&self.ppu)
+    pub fn get_ppu(&self) -> &Ppu {
+        &self.ppu
     }
     pub fn get_cpu(&self) -> &Cpu { &self.cpu }
     pub fn reset(&mut self) { self.cpu.reset(&self.databus); }
@@ -59,7 +71,7 @@ impl NES {
     }
 
     pub fn deassemble_prg(&self) -> (Vec<Instruction>, u16) {
-        let start_address = self.cartridge.borrow().get_instruction_offset();
+        let start_address = self.cartridge.get_instruction_offset();
 
         let mut instructions: Vec<Instruction> = Vec::new();
         let mut i = start_address;

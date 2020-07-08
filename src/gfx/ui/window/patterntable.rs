@@ -33,7 +33,7 @@ impl<'a> PatternTableWindow<'a> {
     }
 
     fn _update_texture(&mut self, nes: &NES, pattern_table_index: u8) -> Result<(), String>{
-        let pixel_data = nes.borrow_ppu().patterntable_to_texture_data(pattern_table_index);
+        let pixel_data = nes.get_ppu().patterntable_to_texture_data(pattern_table_index);
         let mut texture_rgb_data = [0 as u8; (128 * 128 * 3) as usize];
 
         for (i, val) in pixel_data.iter().enumerate() {
@@ -65,9 +65,7 @@ impl<'a> PatternTableWindow<'a> {
     }
 }
 
-
 impl<'a> RenderableWindow for PatternTableWindow<'a> {
-
     fn render(&mut self,
               canvas: &mut Canvas<Window>,
               x: i32,

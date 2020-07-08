@@ -19,7 +19,7 @@ static SCREEN_HEIGHT: u32 = 800;
 
 static FRAMERATE: u32 = 60;
 static FRAMETIME_NANO: u64 = 1_000_000_000 / FRAMERATE as u64;
-static TICKS_PER_FRAME: usize = 100;
+static TICKS_PER_FRAME: usize = 15000;
 
 static BACKGROUND_COLOR: (u8, u8, u8, u8) = (128, 128, 128, 255);
 static TEXT_COLOR: (u8, u8, u8, u8) = (255, 255, 255, 255);
@@ -105,15 +105,23 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
     framerate_counter.set_active(true);
     windows.push(&mut framerate_counter);
 
+    let mut patterntable = window::create_patterntable_window(&texture_creator, 256, 256);
+    patterntable.set_pos(780, 20);
+    patterntable.set_active(true);
+    windows.push(&mut patterntable);
+
+    let mut framebuffer = window::create_framebuffer_window(&texture_creator, 512, 512);
+    framebuffer.set_pos(780, 280);
+    framebuffer.set_active(true);
+    windows.push(&mut framebuffer);
+
+
     let mut event_pump = sdl_context.event_pump()?;
     let timer = sdl_context.timer()?;
     let mut framerate = FRAMERATE;
     let mut running = false;
 
-    let mut patterntable = window::create_patterntable_window(&texture_creator, 256, 256);
-    patterntable.set_pos(780, 20);
-    patterntable.set_active(true);
-    windows.push(&mut patterntable);
+    render(&mut canvas, &mut windows, nes)?;
 
     'mainloop: loop {
         let time = timer.performance_counter();
@@ -127,9 +135,11 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
                 }
                 Event::KeyDown { keycode: Some(Keycode::Comma), .. } => {
                     nes.tick();
+                    render(&mut canvas, &mut windows, nes)?;
                 }
                 Event::KeyDown { keycode: Some(Keycode::Period), .. } => {
                     nes.tick_cpu_instruction();
+                    render(&mut canvas, &mut windows, nes)?;
                 }
                 Event::KeyDown { keycode: Some(Keycode::I), repeat: false, .. } => {
                     nes.set_irq_lo();
@@ -149,12 +159,15 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
 
         if running {
             for _i in 0..TICKS_PER_FRAME {
-                nes.tick();
+                let frame_ready = nes.tick();
+                // if frame_ready {
+                //     render(&mut canvas, &mut windows, nes)?;
+                // }
             }
         }
 
-        nes.set_actual_framerate(framerate);
         render(&mut canvas, &mut windows, nes)?;
+        nes.set_actual_framerate(framerate);
 
         let sleep_time_nano = FRAMETIME_NANO as i64 - (timer.performance_counter() - time) as i64;
         if sleep_time_nano < 0 {

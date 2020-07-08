@@ -378,12 +378,12 @@ impl<'a> RenderableWindow for PpuWindow<'a> {
               y: i32,
               nes: &NES) -> Result<(), String> {
 
-        let ppuctrl = nes.borrow_ppu().get_ppuctrl();
-        let ppumask = nes.borrow_ppu().get_ppuctrl();
-        let ppustatus = nes.borrow_ppu().get_ppustatus();
-        let oamaddr = nes.borrow_ppu().get_oamaddr();
-        let ppuscroll = nes.borrow_ppu().get_ppuscroll();
-        let ppuaddr = nes.borrow_ppu().get_ppuaddr();
+        let ppuctrl = nes.get_ppu().get_ppuctrl();
+        let ppumask = nes.get_ppu().get_ppuctrl();
+        let ppustatus = nes.get_ppu().get_ppustatus();
+        let oamaddr = nes.get_ppu().get_oamaddr();
+        let ppuscroll = nes.get_ppu().get_ppuscroll();
+        let ppuaddr = nes.get_ppu().get_ppuaddr();
 
         render::window(canvas,
                        x,

@@ -1,6 +1,7 @@
 use super::nrom::NRom;
 use super::frogrom::FrogRom;
 use crate::nes::cartridge::cartridge::Mirroring::{Horizontal, Vertical};
+use crate::ppu::nametable::Mirroring;
 
 pub const CARTRIDGE_OFFSET: u16 = 0x4020;
 pub const CARTRIDGE_MAX_SIZE: usize = 0x10000 - CARTRIDGE_OFFSET as usize;
@@ -18,7 +19,7 @@ pub trait CartridgeTrait {
 pub struct Cartridge {
     implementation: Box<dyn CartridgeTrait>,
     instruction_offset: u16,
-    mirroring: Mirroring
+    mirroring: Mirroring,
 }
 
 impl Cartridge {
@@ -53,18 +54,15 @@ pub fn create_cartridge_from_ines(mapper: u8, prg_rom: Vec<&[u8]>,
                                   mirroring: u8) -> Result<Cartridge, String> {
     match mapper {
         0 => Ok(Cartridge::new(Box::new(NRom::new(prg_rom, chr_rom[0])),
-                               if mirroring == 0 { Horizontal } else {Vertical})),
+                               if mirroring == 0 { Mirroring::Horizontal } else { Mirroring::Vertical })),
         _ => Err(format!("Unsupported mapper: {}", mapper))
     }
 }
 
 pub fn create_cartridge_from_raw(data: &[u8]) -> Result<Cartridge, String> {
     Ok(Cartridge::new(Box::new(FrogRom::new(data)),
-                      Horizontal))
+                      Mirroring::Horizontal))
 }
 
-pub enum Mirroring {
-    Horizontal = 0,
-    Vertical = 1
-}
+
 
