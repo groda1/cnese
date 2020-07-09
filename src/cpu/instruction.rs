@@ -3,6 +3,7 @@ use super::state::State;
 use super::state;
 use super::addressing::AddressingMode;
 use super::cpu;
+use crate::cpu::state::{Status, SR_MASK_BREAK, SR_MASK_B_FLAG};
 
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy)]
@@ -542,7 +543,11 @@ const PHA: OperationFn = |state: &mut State, bus: &mut dyn Databus, _operand: u1
 };
 
 const PHP: OperationFn = |state: &mut State, bus: &mut dyn Databus, _operand: u16| {
-    _push_stack(state, bus, state.get_status_ref().get_as_u8());
+    let mut status = state.get_status_ref().clone();
+
+    status.set(SR_MASK_BREAK, true);
+    status.set(SR_MASK_B_FLAG, true);
+    _push_stack(state, bus, status.get_as_u8());
 };
 
 const PLA: OperationFn = |state: &mut State, bus: &mut dyn Databus, _operand: u16| {
@@ -550,7 +555,7 @@ const PLA: OperationFn = |state: &mut State, bus: &mut dyn Databus, _operand: u1
 };
 
 const PLP: OperationFn = |state: &mut State, bus: &mut dyn Databus, _operand: u16| {
-    let status_u8 = _pull_stack(state, bus);
+    let status_u8 = _pull_status_from_stack(state, bus);
     state.set_status(state::Status::from_u8(status_u8));
 };
 
@@ -599,10 +604,8 @@ const ROR_MEM: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand:
 };
 
 const RTI: OperationFn = |state: &mut State, bus: &mut dyn Databus, _operand: u16| {
-    let status_u8 = _pull_stack(state, bus);
-
-    let mut status = state::Status::from_u8(status_u8);
-    status.set(state::SR_MASK_BREAK, false);
+    let status_u8 = _pull_status_from_stack(state, bus);
+    let status = state::Status::from_u8(status_u8);
     state.set_status(status);
 
     _pull_pc_from_stack(state, bus);
@@ -1073,11 +1076,13 @@ fn _compare(state: &mut State, mem: u8, operand: u8) {
     state.set_status_field(state::SR_MASK_CARRY, carry);
 }
 
-fn _handle_interrupt(state: &mut State, bus: &mut dyn Databus, interrupt_vector: u16, b_flag: bool) {
+fn _handle_interrupt(state: &mut State, bus: &mut dyn Databus, interrupt_vector: u16, break_flag: bool) {
     _push_pc_to_stack(state, bus,state.get_next_pc());
 
     let mut status = *state.get_status_ref();
-    status.set(state::SR_MASK_BREAK, b_flag);
+    status.set(state::SR_MASK_BREAK, break_flag);
+    status.set(state::SR_MASK_B_FLAG, true);
+
     _push_stack(state, bus, status.get_as_u8());
 
     state.set_status_field(state::SR_MASK_INTERRUPT, true);
@@ -1103,6 +1108,10 @@ fn _pull_pc_from_stack(state: &mut State, bus: &dyn Databus) {
 fn _push_stack(state: &mut State, bus: &mut dyn Databus, data: u8) {
     bus.write(cpu::STACK_OFFSET + state.stack_pointer as u16, data);
     state.dec_sp();
+}
+
+fn _pull_status_from_stack(state :&mut State, bus: &dyn Databus) -> u8 {
+    _pull_stack(state, bus) & !(state::SR_MASK_B_FLAG | state::SR_MASK_BREAK)
 }
 
 fn _pull_stack(state: &mut State, bus: &dyn Databus) -> u8 {

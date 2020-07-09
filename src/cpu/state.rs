@@ -1,5 +1,6 @@
 pub const SR_MASK_NEGATIVE: u8 = 1 << 7;
 pub const SR_MASK_OVERFLOW: u8 = 1 << 6;
+pub const SR_MASK_B_FLAG: u8 = 1 << 5;
 pub const SR_MASK_BREAK: u8 = 1 << 4;
 pub const SR_MASK_DECIMAL: u8 = 1 << 3;
 pub const SR_MASK_INTERRUPT: u8 = 1 << 2;
