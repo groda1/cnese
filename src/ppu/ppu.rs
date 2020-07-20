@@ -1,6 +1,7 @@
 use crate::nes::cartridge::cartridge::Cartridge;
 use super::register;
 use crate::ppu::register::{PpuStatus, PpuCtrl, PpuStatusTrait, PpuCtrlTrait};
+use crate::ppu::nametable;
 use crate::ppu::nametable::NametableMemory;
 
 const PATTERN_TABLE_SIZE: usize = 0x1000;
@@ -14,11 +15,20 @@ const SCANLINE_VBLANK_END: u16 = 260;
 
 const SCANLINE_CYCLE_COUNT: u16 = 341;
 
-const PIXEL_OUTPUT_CYCLE_OFFSET: u16 = 4;
+const PIXEL_OUTPUT_CYCLE_OFFSET: u16 = 1;
 
 pub const FRAMEBUFFER_WIDTH: usize = 256;
 pub const FRAMEBUFFER_HEIGHT: usize = 240;
 const FRAMEBUFFER_SIZE: usize = FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT;
+
+const PALETTE_RAM_SIZE : usize = 0x20;
+const PALETTE_START_ADDRESS: u16 = 0x3F00;
+const PALETTE_END_ADDRESS: u16 = 0x3FFF;
+
+const PATTERN_TABLE_START : u16 = 0;
+const PATTERN_TABLE_END :u16 = 0x1FFF;
+
+const VRAM_SIZE:u16 = 0x4000;
 
 pub struct Ppu {
     cartridge_ptr: *mut Cartridge,
@@ -34,6 +44,9 @@ pub struct Ppu {
     latch: Option<u8>,
 
     nametable_memory: NametableMemory,
+    palette_ram: [u8; PALETTE_RAM_SIZE],
+
+    vram_read_buffer :u8,
 
     // rendering variables
     scanline: u16,
@@ -42,6 +55,19 @@ pub struct Ppu {
     framecount: u64,
 
     framebuffer: [u8; FRAMEBUFFER_SIZE],
+
+    v_horizontal: u8,
+    v_vertical:u8,
+
+    _tmp_nt_byte :u8,
+    _tmp_at_byte:u8,
+    _tmp_pt_lo:u8,
+    _tmp_pt_hi: u8,
+
+    bg_pattern_lo_shift: u16,
+    bg_pattern_hi_shift: u16,
+
+
 }
 
 impl Ppu {
@@ -58,11 +84,23 @@ impl Ppu {
             ppuaddr: 0,
             latch: None,
             nametable_memory: NametableMemory::new(cartridge.get_mirroring()),
-
+            palette_ram: [0; PALETTE_RAM_SIZE],
+            vram_read_buffer: 0,
             scanline: SCANLINE_PRE_RENDER,
             scanline_cycle: 0,
             framecount: 0,
             framebuffer: [0; FRAMEBUFFER_SIZE],
+
+            v_horizontal : 2,
+            v_vertical : 30,
+
+            _tmp_nt_byte : 0,
+            _tmp_at_byte : 0,
+            _tmp_pt_lo : 0,
+            _tmp_pt_hi : 0,
+
+            bg_pattern_lo_shift: 0,
+            bg_pattern_hi_shift: 0,
         }
     }
 
@@ -76,6 +114,9 @@ impl Ppu {
             }
             register::OAMADDR_OFFSET => {
                 self.oamaddr = data;
+            }
+            register::OAMDATA_OFFSET => {
+                self._write_oamdata(data);
             }
             register::PPUSCROLL_OFFSET => {
                 self._write_ppuscroll(data);
@@ -111,10 +152,17 @@ impl Ppu {
         }
     }
 
+    fn _write_oamdata(&mut self, data: u8)  {
+        // TODO write oamdata;
+        // println!("writing oamdata");
+    }
+
+
     fn _write_ppuaddr(&mut self, data: u8) {
         match self.latch {
             Some(hi) => {
-                self.ppuaddr = ((hi as u16) << 8) + data as u16;
+                self.ppuaddr = (((hi as u16) << 8) + data as u16) % VRAM_SIZE;
+                self.latch = None;
             }
             None => {
                 self.latch = Some(data);
@@ -134,14 +182,64 @@ impl Ppu {
     }
 
     fn _read_ppudata(&mut self) -> u8 {
-        let data = self.nametable_memory.read(self.ppuaddr);
+        let mut return_value = self.vram_read_buffer;
+
+        match self.ppuaddr {
+            PATTERN_TABLE_START..=PATTERN_TABLE_END =>  unsafe {
+                self.vram_read_buffer =  (&mut *self.cartridge_ptr).read_chr(self.ppuaddr);
+            }
+            nametable::START_ADDRESS..=nametable::END_ADDRESS => {
+                self.vram_read_buffer = self.nametable_memory.read(self.ppuaddr);
+            }
+            nametable::MIRROR_START_ADDRESS..=nametable::MIRROR_END_ADDRESS => {
+                let mirrored_address = self.ppuaddr - 0x1000;
+                self.vram_read_buffer = self.nametable_memory.read(mirrored_address);
+            }
+            PALETTE_START_ADDRESS..=PALETTE_END_ADDRESS => {
+                let mirrored_address = self.ppuaddr - 0x1000;
+
+                return_value = self.palette_ram[(mirrored_address as usize % PALETTE_RAM_SIZE)];
+                self.vram_read_buffer = self.nametable_memory.read(mirrored_address);
+            }
+            _ => {
+                println!("_read_ppudata {:04x}", self.ppuaddr);
+                unreachable!()
+            }
+        }
+
         self.ppuaddr += self.ppuctrl.vram_address_increment();
-        data
+        if self.ppuaddr > VRAM_SIZE {
+            self.ppuaddr = self.ppuaddr % VRAM_SIZE;
+        }
+
+        return_value
     }
 
     fn _write_ppudata(&mut self, data: u8) {
-        self.nametable_memory.write(self.ppuaddr, data);
+        match self.ppuaddr {
+            PATTERN_TABLE_START..=PATTERN_TABLE_END => unsafe {
+                (&mut *self.cartridge_ptr).write_chr(self.ppuaddr, data);
+            }
+            nametable::START_ADDRESS..=nametable::END_ADDRESS => {
+               self.nametable_memory.write(self.ppuaddr, data);
+            }
+            nametable::MIRROR_START_ADDRESS..=nametable::MIRROR_END_ADDRESS => {
+                let mirrored_address = self.ppuaddr - 0x1000;
+                self.nametable_memory.write(mirrored_address, data);
+            }
+            PALETTE_START_ADDRESS..=PALETTE_END_ADDRESS => {
+                self.palette_ram[self.ppuaddr as usize % PALETTE_RAM_SIZE];
+            }
+            _ => {
+                println!("_write_ppudata {:04x}", self.ppuaddr);
+                unreachable!()
+            }
+        }
+
         self.ppuaddr += self.ppuctrl.vram_address_increment();
+        if self.ppuaddr > VRAM_SIZE {
+            self.ppuaddr = self.ppuaddr % VRAM_SIZE;
+        }
     }
 
     pub fn _output_framebuffer_pixel(&mut self) {
@@ -149,22 +247,102 @@ impl Ppu {
             SCANLINE_VISIBLE_START..=SCANLINE_VISIBLE_END => {
                 if self.scanline_cycle >= PIXEL_OUTPUT_CYCLE_OFFSET &&
                     self.scanline_cycle < (FRAMEBUFFER_WIDTH as u16 - PIXEL_OUTPUT_CYCLE_OFFSET) {
-                    let pixel = self.scanline as usize * FRAMEBUFFER_WIDTH + self.scanline_cycle as usize - 4;
-                    self.framebuffer[pixel] = ((self.scanline_cycle as u64 + self.framecount) % 64) as u8;
+                    let pixel = self.scanline as usize * FRAMEBUFFER_WIDTH + self.scanline_cycle as usize - PIXEL_OUTPUT_CYCLE_OFFSET as usize;
+                    self.framebuffer[pixel] = self._next_pixel_value();
                 }
             }
             _ => {}
         }
     }
 
-    fn _prerender_scanline(&mut self) {
-        if self.scanline_cycle == 1 {
-            self.ppustatus.clear_vblank();
-        }
-        self._render_scanline();
+    pub fn _next_pixel_value(&mut self) -> u8 {
+        let lo = (self.bg_pattern_lo_shift >> 15) as u8;
+        let hi = (self.bg_pattern_hi_shift >> 15) as u8;
+
+        self.bg_pattern_lo_shift <<= 1;
+        self.bg_pattern_hi_shift <<= 1;
+
+
+        (hi << 1)+ lo
     }
 
-    fn _render_scanline(&mut self) {
+    fn _prerender_scanline(&mut self) {
+        self._process_scanline();
+
+        match self.scanline_cycle {
+            1 => {
+                self.ppustatus.clear_vblank();
+                // TODO clear sprite overflow
+            }
+            280..=304 => {
+                self.v_vertical = 0;
+            }
+
+            _ => {}
+        }
+
+    }
+
+    fn _inc_v_horizontal(&mut self) {
+        self.v_horizontal += 1;
+        if self.v_horizontal > 32 {
+            self.v_horizontal = 0;
+        }
+    }
+
+    fn _inc_v_vertical(&mut self) {
+        self.v_vertical += 1;
+        if self.v_vertical >= 240 {
+            self.v_vertical = 0;
+        }
+    }
+
+    fn _reset_v_horizontal(&mut self) {
+        self.v_horizontal = 0;
+    }
+
+    fn _fetch_nt_byte(&mut self) {
+        let fetch_addr = (self.v_horizontal as u16 + ((self.v_vertical / 8)as u16 * 32)) | 0x2000;
+
+        // println!("v.x={} v.y={} scanline={} cycle={}, fetch_addr={:04x}", self.v_horizontal , self.v_vertical, self.scanline, self.scanline_cycle, fetch_addr);
+        self._tmp_nt_byte = self.nametable_memory.read(fetch_addr);
+
+        if self._tmp_nt_byte > 0 {
+            // println!("nt byte {}   scanline={} cycle={}", self._tmp_nt_byte, self.scanline, self.scanline_cycle);
+        }
+    }
+
+     fn _fetch_bg_lo_byte(&mut self) {
+
+        let addr = (self._tmp_nt_byte as u16 * 16) + (self.v_vertical % 8) as u16;
+         self._tmp_pt_lo = unsafe { (*self.cartridge_ptr).read_chr(addr) };
+
+         // self._tmp_pt_lo = unsafe { (*self.cartridge_ptr).read_chr(0x1000) };
+    }
+
+
+    fn _fetch_bg_hi_byte(&mut self) {
+        let addr = (self._tmp_nt_byte as u16 * 16 + (self.v_vertical % 8) as u16) + 8;
+        // self._tmp_pt_hi = unsafe { (*self.cartridge_ptr).read_chr(addr) };
+
+        self._tmp_pt_hi = unsafe { (*self.cartridge_ptr).read_chr(addr) };
+        // println!("fetching hi {:04x} = {:02x}", addr, self._tmp_pt_hi);
+    }
+
+    fn _reload_shift_registers(&mut self) {
+
+
+
+        self.bg_pattern_lo_shift = (self.bg_pattern_lo_shift & 0xFF00) | self._tmp_pt_lo as u16;
+        self.bg_pattern_hi_shift = (self.bg_pattern_hi_shift & 0xFF00) | self._tmp_pt_hi as u16;
+    }
+
+    fn _shift_byte(&mut self) {
+        self.bg_pattern_lo_shift <<= 8;
+        self.bg_pattern_hi_shift <<= 8;
+    }
+
+    fn _process_scanline(&mut self) {
         let cycle_mod = self.scanline_cycle % 8;
 
         match self.scanline_cycle {
@@ -172,49 +350,55 @@ impl Ppu {
             1..=256 => {
                 if cycle_mod == 1 && self.scanline_cycle >= 9 {
                     //Reload shift registers
+                    self._reload_shift_registers();
                 }
 
                 match cycle_mod {
-                    1 => {
-                        // Nametable byte
+                    0 => { self._inc_v_horizontal(); }
+                    1 => { self._fetch_nt_byte();
+
+
                     }
                     3 => {
                         // Attribute
                     }
                     5 => {
                         // Pattern lo
+                        self._fetch_bg_lo_byte();
                     }
                     7 => {
                         // Pattern hi
+                        self._fetch_bg_hi_byte();
                     }
                     _ => {}
                 }
-            }
-            257..=320 => {
-                // Reload shift registers
-                match cycle_mod {
-                    1 => {
-                        // Garbage Nametable byte
-                    }
-                    3 => {
-                        // Garbage Nametable byte
-                    }
-                    5 => {
-                        // Pattern lo
-                    }
-                    7 => {
-                        // Pattern hi
-                    }
-                    _ => {}
+                if self.scanline_cycle == 256 {
+                    self._inc_v_vertical();
                 }
+
             }
-            321..=336 => {
-                // Read first two tiles next scanline
+            257 => {
+                self._reset_v_horizontal();
             }
-            337..=340 => {
+
+            321 => { self._fetch_nt_byte(); }
+            325 => { self._fetch_bg_lo_byte(); }
+            327 => { self._fetch_bg_hi_byte(); }
+            328 => { self._inc_v_horizontal(); }
+            329 => {
+                self._fetch_nt_byte();
+                self._reload_shift_registers();
+                self._shift_byte();
+            }
+            333 => { self._fetch_bg_lo_byte(); }
+            335 => { self._fetch_bg_hi_byte(); }
+            336 => { self._inc_v_horizontal(); }
+
+            337 => { self._reload_shift_registers();}
+            338..=340 => {
                 // Read unknown
             }
-            _ => { unreachable!() }
+            _ => { }
         }
     }
 
@@ -231,7 +415,7 @@ impl Ppu {
                 self._prerender_scanline();
             }
             SCANLINE_VISIBLE_START..=SCANLINE_VISIBLE_END => {
-                self._render_scanline();
+                self._process_scanline();
             }
             SCANLINE_POST_RENDER => {}
             SCANLINE_VBLANK_START..=SCANLINE_VBLANK_END => {
@@ -266,6 +450,8 @@ impl Ppu {
         if self.scanline > SCANLINE_PRE_RENDER {
             self.scanline = 0;
             self.framecount += 1;
+
+            self.v_vertical = 0; // TODO
         }
     }
 
@@ -309,6 +495,7 @@ impl Ppu {
         target
     }
 
+
     fn _read_memory(&self, address: u16) -> u8 {
         match address {
             0..=0x1FFF => {
@@ -316,6 +503,8 @@ impl Ppu {
                 cartridge.read_chr(address)
             }
             0x2000..=0x2FFF => {
+
+
                 unimplemented!()
             }
             0x3000..=0x3EFF => {
@@ -373,6 +562,10 @@ impl Ppu {
         self.ppuscroll
     }
 
+    pub fn get_nmi_signal(&self) -> bool {
+        self.ppuctrl.generate_nmi() && self.ppustatus.is_vblank()
+    }
+
     pub fn get_ppuaddr(&self) -> u16 {
         self.ppuaddr
     }
@@ -380,5 +573,6 @@ impl Ppu {
     pub fn get_framebuffer(&self) -> &[u8] {
         &self.framebuffer
     }
+
 }
 

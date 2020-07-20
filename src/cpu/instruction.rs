@@ -543,7 +543,7 @@ const PHA: OperationFn = |state: &mut State, bus: &mut dyn Databus, _operand: u1
 };
 
 const PHP: OperationFn = |state: &mut State, bus: &mut dyn Databus, _operand: u16| {
-    let mut status = state.get_status_ref().clone();
+    let mut status = *state.get_status_ref();
 
     status.set(SR_MASK_BREAK, true);
     status.set(SR_MASK_B_FLAG, true);

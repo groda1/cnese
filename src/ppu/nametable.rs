@@ -1,7 +1,10 @@
 use crate::ppu::nametable::Mirroring::{Horizontal, Vertical};
 
-const START_ADDRESS: u16 = 0x2000;
-const END_ADDRESS: u16 = 0x2FFF;
+pub const START_ADDRESS: u16 = 0x2000;
+pub const END_ADDRESS: u16 = 0x2FFF;
+pub const MIRROR_START_ADDRESS:u16 = 0x3000;
+pub const MIRROR_END_ADDRESS:u16 = 0x3EFF;
+
 const NAMETABLE_SIZE: usize = 0x400;
 
 pub struct NametableMemory {
@@ -35,7 +38,8 @@ impl NametableMemory {
                 let raw_address = self._calc_address(address);
                 self.memory[raw_address]
             }
-            _ => { unimplemented!() }
+            _ => unreachable!()
+
         }
     }
 
@@ -45,9 +49,8 @@ impl NametableMemory {
                 let raw_address = self._calc_address(address);
                 self.memory[raw_address] = data;
             }
-            _ => { unimplemented!() }
+            _ =>  unreachable!()
         }
-
     }
 }
 
@@ -67,7 +70,7 @@ fn test_horizontal() {
     assert_eq!(mem._calc_address(0x2001), mem._calc_address(0x2401));
     assert_eq!(mem._calc_address(0x23ff), mem._calc_address(0x27ff));
 
-    assert_eq!(mem._calc_address(0x2800), mem._calc_address(0x2C00));
+    assert_eq!(mem._calc_address(0x2800), mem._calc_address(0x2c00));
     assert_eq!(mem._calc_address(0x2801), mem._calc_address(0x2c01));
     assert_eq!(mem._calc_address(0x2bff), mem._calc_address(0x2fff));
 

@@ -15,6 +15,9 @@ const NES_PPU_REGISTER_END:u16 = 0x2007;
 const NES_APU_IO_REGISTERS_START:u16 = 0x4000;
 const NES_APU_IO_REGISTERS_END:u16 = 0x4017;
 
+const NES_APU_IO_TEST_MODE_START:u16 = 0x4018;
+const NES_APU_IO_TEST_MODE_END:u16 = 0x401F;
+
 const RAM_SIZE: usize = 0x0800;
 
 pub const END: u16 = 0xFFFF;
@@ -72,7 +75,8 @@ impl NesDatabus {
     fn _read_apu_io(&self, address: u16) -> u8 {
 
         if address == 0x4016 {
-            0xff
+            // TODO set to what?
+            0x0
         }
          else {
              unreachable!()
@@ -92,6 +96,10 @@ impl crate::cpu::databus::Databus for NesDatabus {
             }
             NES_APU_IO_REGISTERS_START..=NES_APU_IO_REGISTERS_END => {
                 self._read_apu_io(address)
+            }
+            NES_APU_IO_TEST_MODE_START..=NES_APU_IO_TEST_MODE_END => {
+                println!("Test mode");
+                0
             }
             CARTRIDGE_SPACE_START..=END => unsafe {
                 (*self.cartridge).read_prg(address)

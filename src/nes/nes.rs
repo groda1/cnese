@@ -43,14 +43,21 @@ impl NES {
         frame_done |= self.ppu.tick();
         frame_done |= self.ppu.tick();
 
+        if self.ppu.get_nmi_signal() {
+            self.cpu.set_nmi_lo();
+        } else {
+            self.cpu.set_nmi_hi();
+        }
+
         frame_done
     }
 
     pub fn tick_cpu_instruction(&mut self) {
-        let cycles = self.cpu.tick_instruction(&mut self.databus);
-        for _i in 0..cycles * 3 {
-            self.ppu.tick();
-        }
+        // TODO
+        // let cycles = self.cpu.tick_instruction(&mut self.databus);
+        // for _i in 0..cycles * 3 {
+        //     self.ppu.tick();
+        // }
     }
 
     pub fn get_databus(&self) -> &dyn Databus { &self.databus }

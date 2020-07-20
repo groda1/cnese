@@ -23,7 +23,6 @@ pub struct NRom {
     prg_ram: Box<[u8; PRG_RAM_SIZE]>,
     prg_rom: Box<[u8; PRG_ROM_SIZE]>,
     chr_rom: Box<[u8; CHR_ROM_SIZE]>
-
 }
 
 impl NRom {
@@ -86,6 +85,10 @@ impl CartridgeTrait for NRom {
     fn read_chr_slice(&self, address: u16, len: usize) -> &[u8] {
         let start = address as usize;
         &self.chr_rom[start..start + len]
+    }
+
+    fn write_chr(&mut self, address: u16, data: u8) {
+        // self.chr_rom[address as usize] = data;
     }
 
     fn get_instruction_offset(&self) -> u16 { PRG_ROM_START }

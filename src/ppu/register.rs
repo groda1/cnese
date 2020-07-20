@@ -34,7 +34,7 @@ pub trait PpuCtrlTrait {
     fn bg_pattern_table_addr(&self) -> u8;
     fn sprite_size(&self) -> u8;
     fn ppu_master_slave_select(&self) -> u8;
-    fn generate_nmi(&self) -> u8;
+    fn generate_nmi(&self) -> bool;
 }
 pub type PpuCtrl = u8;
 
@@ -67,8 +67,8 @@ impl PpuCtrlTrait for PpuCtrl {
         unimplemented!()
     }
 
-    fn generate_nmi(&self) -> u8 {
-        unimplemented!()
+    fn generate_nmi(&self) -> bool {
+        (*self & PPUCTRL_GENERATE_NMI_MASK) > 0
     }
 }
 
@@ -126,6 +126,7 @@ const PPUSTATUS_VBLANK_MASK: u8 = 1 << 7;
 pub trait PpuStatusTrait {
     fn set_vblank(&mut self);
     fn clear_vblank(&mut self);
+    fn is_vblank(&self) -> bool;
 }
 pub type PpuStatus = u8;
 
@@ -136,6 +137,10 @@ impl PpuStatusTrait for PpuStatus {
 
     fn clear_vblank(&mut self) {
         *self &= !PPUSTATUS_VBLANK_MASK;
+    }
+
+    fn is_vblank(&self) -> bool {
+        (*self & PPUSTATUS_VBLANK_MASK) > 0
     }
 }
 

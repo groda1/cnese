@@ -13,6 +13,8 @@ pub trait CartridgeTrait {
 
     fn read_chr(&self, address: u16) -> u8;
     fn read_chr_slice(&self, address: u16, len: usize) -> &[u8];
+    fn write_chr(&mut self, address: u16, data: u8);
+
     fn get_instruction_offset(&self) -> u16;
 }
 
@@ -44,6 +46,10 @@ impl Cartridge {
     }
     pub fn read_chr_slice(&self, address: u16, len: usize) -> &[u8] {
         self.implementation.read_chr_slice(address, len)
+    }
+
+    pub fn write_chr(&mut self, address: u16, data: u8) {
+        self.implementation.write_chr(address, data);
     }
 
     pub fn get_instruction_offset(&self) -> u16 { self.instruction_offset }

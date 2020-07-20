@@ -110,7 +110,7 @@ pub fn run(nes: &mut NES) -> Result<(), String> {
     patterntable.set_active(true);
     windows.push(&mut patterntable);
 
-    let mut framebuffer = window::create_framebuffer_window(&texture_creator, 512, 512);
+    let mut framebuffer = window::create_framebuffer_window(&texture_creator, 512, 480);
     framebuffer.set_pos(780, 280);
     framebuffer.set_active(true);
     windows.push(&mut framebuffer);

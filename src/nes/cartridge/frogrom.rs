@@ -34,5 +34,9 @@ impl CartridgeTrait for FrogRom {
         unimplemented!()
     }
 
+    fn write_chr(&mut self, address: u16, data: u8) {
+        unimplemented!()
+    }
+
     fn get_instruction_offset(&self) -> u16 { CARTRIDGE_OFFSET }
 }
