@@ -186,7 +186,7 @@ impl Ppu {
 
         match self.ppuaddr {
             PATTERN_TABLE_START..=PATTERN_TABLE_END =>  unsafe {
-                self.vram_read_buffer =  (&mut *self.cartridge_ptr).read_chr(self.ppuaddr);
+                self.vram_read_buffer = (&mut *self.cartridge_ptr).read_chr(self.ppuaddr);
             }
             nametable::START_ADDRESS..=nametable::END_ADDRESS => {
                 self.vram_read_buffer = self.nametable_memory.read(self.ppuaddr);
@@ -194,6 +194,7 @@ impl Ppu {
             nametable::MIRROR_START_ADDRESS..=nametable::MIRROR_END_ADDRESS => {
                 let mirrored_address = self.ppuaddr - 0x1000;
                 self.vram_read_buffer = self.nametable_memory.read(mirrored_address);
+
             }
             PALETTE_START_ADDRESS..=PALETTE_END_ADDRESS => {
                 let mirrored_address = self.ppuaddr - 0x1000;
@@ -302,7 +303,7 @@ impl Ppu {
     }
 
     fn _fetch_nt_byte(&mut self) {
-        let fetch_addr = (self.v_horizontal as u16 + ((self.v_vertical / 8)as u16 * 32)) | 0x2000;
+        let fetch_addr = (self.v_horizontal as u16 + ((self.v_vertical / 8)as u16 * 32)) + 0x2000;
 
         // println!("v.x={} v.y={} scanline={} cycle={}, fetch_addr={:04x}", self.v_horizontal , self.v_vertical, self.scanline, self.scanline_cycle, fetch_addr);
         self._tmp_nt_byte = self.nametable_memory.read(fetch_addr);

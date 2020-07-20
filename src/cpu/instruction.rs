@@ -315,7 +315,7 @@ const BIT: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16
     let op = bus.read(operand);
     state.set_status_field(state::SR_MASK_NEGATIVE, (op & state::SR_MASK_NEGATIVE) > 0);
     state.set_status_field(state::SR_MASK_OVERFLOW, (op & state::SR_MASK_OVERFLOW) > 0);
-    state.set_status_field(state::SR_MASK_ZERO, (op & state.acc) > 0);
+    state.set_status_field(state::SR_MASK_ZERO, (op & state.acc) == 0);
 };
 
 const BMI: OperationFn = |state: &mut State, _bus: &mut dyn Databus, operand: u16| {
@@ -1068,12 +1068,10 @@ fn _sbc(state: &mut State, operand: u8) {
 }
 
 fn _compare(state: &mut State, mem: u8, operand: u8) {
-    let sum = operand.wrapping_add(!mem).wrapping_add(1);
-    let carry = (operand as u16 + (!mem) as u16) > 0xff;
-
+    let sum = operand.wrapping_sub(mem);
     state.set_status_field(state::SR_MASK_NEGATIVE, sum >= 128);
-    state.set_status_field(state::SR_MASK_ZERO, sum == 0);
-    state.set_status_field(state::SR_MASK_CARRY, carry);
+    state.set_status_field(state::SR_MASK_ZERO, operand == mem);
+    state.set_status_field(state::SR_MASK_CARRY, operand >= mem);
 }
 
 fn _handle_interrupt(state: &mut State, bus: &mut dyn Databus, interrupt_vector: u16, break_flag: bool) {
