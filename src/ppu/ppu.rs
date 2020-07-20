@@ -314,7 +314,7 @@ impl Ppu {
 
      fn _fetch_bg_lo_byte(&mut self) {
         let addr = (self._tmp_nt_byte as u16 * 16) + (self.v_vertical % 8) as u16;
-         self._tmp_pt_lo = unsafe { (*self.cartridge_ptr).read_chr(addr + 0x1000) };
+         self._tmp_pt_lo = unsafe { (*self.cartridge_ptr).read_chr(addr + self.ppuctrl.bg_pattern_table_addr()) };
          // TODO patterntable offset
     }
 
@@ -322,7 +322,7 @@ impl Ppu {
     fn _fetch_bg_hi_byte(&mut self) {
         let addr = (self._tmp_nt_byte as u16 * 16 + (self.v_vertical % 8) as u16) + 8;
 
-        self._tmp_pt_hi = unsafe { (*self.cartridge_ptr).read_chr(addr + 0x1000) };
+        self._tmp_pt_hi = unsafe { (*self.cartridge_ptr).read_chr(addr + self.ppuctrl.bg_pattern_table_addr()) };
         // TODO patterntable offset
     }
 

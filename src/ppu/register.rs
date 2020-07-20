@@ -22,7 +22,7 @@ pub const PPUCTRL_OFFSET: u16 = 0x0;
 const PPUCTRL_BASE_NAMETABLE_MASK: u8 = 0b11;
 const PPUCTRL_VRAM_ADDRESS_INCREMENT_MASK: u8 = 1 << 2;
 const PPUCTRL_SPRITE_PATTERN_TABLE_ADDR_MASK: u8 = 1 << 3;
-const PPUCTRL_BG_PATTERN_TABBLE_ADDR_MASK: u8 = 1 << 4;
+const PPUCTRL_BG_PATTERN_TABLE_ADDR_MASK: u8 = 1 << 4;
 const PPUCTRL_SPRITE_SIZE_MASK: u8 = 1 << 5;
 const PPUCTRL_PPU_MASTER_SLAVE_SELECT_MASK: u8 = 1 << 6;
 const PPUCTRL_GENERATE_NMI_MASK: u8 = 1 << 7;
@@ -31,7 +31,7 @@ pub trait PpuCtrlTrait {
     fn base_nametable_addr(&self) -> u16;
     fn vram_address_increment(&self) -> u16;
     fn sprite_pattern_table_addr(&self) -> u8;
-    fn bg_pattern_table_addr(&self) -> u8;
+    fn bg_pattern_table_addr(&self) -> u16;
     fn sprite_size(&self) -> u8;
     fn ppu_master_slave_select(&self) -> u8;
     fn generate_nmi(&self) -> bool;
@@ -55,8 +55,12 @@ impl PpuCtrlTrait for PpuCtrl {
         unimplemented!()
     }
 
-    fn bg_pattern_table_addr(&self) -> u8 {
-        unimplemented!()
+    fn bg_pattern_table_addr(&self) -> u16 {
+        if(*self & PPUCTRL_BG_PATTERN_TABLE_ADDR_MASK) > 0 {
+            0x1000
+        } else {
+            0x0
+        }
     }
 
     fn sprite_size(&self) -> u8 {
