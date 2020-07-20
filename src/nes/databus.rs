@@ -63,7 +63,6 @@ impl NesDatabus {
 
     // TODO move to apu/io controller
     fn _write_apu_io(&mut self, address: u16, data: u8) {
-
         if address == 0x4014 {
             println!("OAMDMA")
         } else if address == 0x4016 {
@@ -73,16 +72,23 @@ impl NesDatabus {
 
     // TODO move to apu/io controller
     fn _read_apu_io(&self, address: u16) -> u8 {
+        if address == 0x4015 {
+            // TODO APU
+            return 0x0;
+        }
 
         if address == 0x4016 {
-            // TODO set to what?
-            0x0
+            // TODO set to what? JOY 1
+            return 0x0;
         }
-         else {
-             unreachable!()
-         }
-    }
+        if address == 0x4017 {
+            // TODO set to what? JOY 2
+            return 0x0;
+        }
 
+        println!("Crash _read_apu_io {:02x}", address);
+        unreachable!();
+    }
 }
 
 impl crate::cpu::databus::Databus for NesDatabus {

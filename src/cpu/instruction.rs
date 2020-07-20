@@ -456,7 +456,7 @@ const JMP: OperationFn = |state: &mut State, _bus: &mut dyn Databus, operand: u1
 };
 
 const JSR: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16| {
-    _push_pc_to_stack(state, bus,state.get_next_pc());
+    _push_pc_to_stack(state, bus,state.get_next_pc() - 1);
     state.set_next_pc(operand);
 };
 
@@ -1077,7 +1077,7 @@ fn _compare(state: &mut State, mem: u8, operand: u8) {
 }
 
 fn _handle_interrupt(state: &mut State, bus: &mut dyn Databus, interrupt_vector: u16, break_flag: bool) {
-    _push_pc_to_stack(state, bus,state.get_next_pc());
+    _push_pc_to_stack(state, bus,state.get_next_pc() - 1);
 
     let mut status = *state.get_status_ref();
     status.set(state::SR_MASK_BREAK, break_flag);
@@ -1101,7 +1101,7 @@ fn _pull_pc_from_stack(state: &mut State, bus: &dyn Databus) {
     let pc_lo = _pull_stack(state, bus);
     let pc_hi = _pull_stack(state, bus);
 
-    let next_pc = ((pc_hi as u16) << 8) + pc_lo as u16;
+    let next_pc = ((pc_hi as u16) << 8) + pc_lo as u16 + 1;
     state.set_next_pc(next_pc);
 }
 

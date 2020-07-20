@@ -313,26 +313,20 @@ impl Ppu {
     }
 
      fn _fetch_bg_lo_byte(&mut self) {
-
         let addr = (self._tmp_nt_byte as u16 * 16) + (self.v_vertical % 8) as u16;
-         self._tmp_pt_lo = unsafe { (*self.cartridge_ptr).read_chr(addr) };
-
-         // self._tmp_pt_lo = unsafe { (*self.cartridge_ptr).read_chr(0x1000) };
+         self._tmp_pt_lo = unsafe { (*self.cartridge_ptr).read_chr(addr + 0x1000) };
+         // TODO patterntable offset
     }
 
 
     fn _fetch_bg_hi_byte(&mut self) {
         let addr = (self._tmp_nt_byte as u16 * 16 + (self.v_vertical % 8) as u16) + 8;
-        // self._tmp_pt_hi = unsafe { (*self.cartridge_ptr).read_chr(addr) };
 
-        self._tmp_pt_hi = unsafe { (*self.cartridge_ptr).read_chr(addr) };
-        // println!("fetching hi {:04x} = {:02x}", addr, self._tmp_pt_hi);
+        self._tmp_pt_hi = unsafe { (*self.cartridge_ptr).read_chr(addr + 0x1000) };
+        // TODO patterntable offset
     }
 
     fn _reload_shift_registers(&mut self) {
-
-
-
         self.bg_pattern_lo_shift = (self.bg_pattern_lo_shift & 0xFF00) | self._tmp_pt_lo as u16;
         self.bg_pattern_hi_shift = (self.bg_pattern_hi_shift & 0xFF00) | self._tmp_pt_hi as u16;
     }
