@@ -75,11 +75,7 @@ impl State {
     }
 
     pub fn calculate_relative_pc(&self, offset: i8) -> u16 {
-        if offset < 0 {
-            self.next_pc - (-offset) as u16
-        } else {
-            self.next_pc + offset as u16
-        }
+        self.next_pc.wrapping_add(offset as u16)
     }
 
     pub fn get_next_pc(&self) -> u16 { self.next_pc }
@@ -124,6 +120,10 @@ mod tests {
         state.set_next_pc(0);
         state.update_pc();
 
+        state.set_next_pc(state.calculate_relative_pc(5));
+        state.set_next_pc(state.calculate_relative_pc(-5));
+        assert_eq!(0, state.program_counter);
+
         state.set_next_pc(state.calculate_relative_pc(100));
         state.update_pc();
         assert_eq!(100, state.program_counter);
@@ -131,6 +131,10 @@ mod tests {
         state.set_next_pc(state.calculate_relative_pc(-50));
         state.update_pc();
         assert_eq!(50, state.program_counter);
+
+        state.set_next_pc(state.calculate_relative_pc(-128));
+        state.update_pc();
+        assert_eq!(65458, state.program_counter);
     }
 
     #[test]

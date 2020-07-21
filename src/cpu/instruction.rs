@@ -4,9 +4,10 @@ use super::state;
 use super::addressing::AddressingMode;
 use super::cpu;
 use crate::cpu::state::{Status, SR_MASK_BREAK, SR_MASK_B_FLAG};
+use crate::cpu::addressing::AddressingMode::ZeropageIndexedX;
 
 #[allow(non_camel_case_types)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 enum Operation {
     ADC_IMM,
     ADC_MEM,
@@ -456,7 +457,7 @@ const JMP: OperationFn = |state: &mut State, _bus: &mut dyn Databus, operand: u1
 };
 
 const JSR: OperationFn = |state: &mut State, bus: &mut dyn Databus, operand: u16| {
-    _push_pc_to_stack(state, bus,state.get_next_pc() - 1);
+    _push_pc_to_stack(state, bus, state.get_next_pc() - 1);
     state.set_next_pc(operand);
 };
 
@@ -552,6 +553,9 @@ const PHP: OperationFn = |state: &mut State, bus: &mut dyn Databus, _operand: u1
 
 const PLA: OperationFn = |state: &mut State, bus: &mut dyn Databus, _operand: u16| {
     state.acc = _pull_stack(state, bus);
+
+    state.set_status_field(state::SR_MASK_NEGATIVE, state.acc >= 128);
+    state.set_status_field(state::SR_MASK_ZERO, state.acc == 0);
 };
 
 const PLP: OperationFn = |state: &mut State, bus: &mut dyn Databus, _operand: u16| {
@@ -613,6 +617,7 @@ const RTI: OperationFn = |state: &mut State, bus: &mut dyn Databus, _operand: u1
 
 const RTS: OperationFn = |state: &mut State, bus: &mut dyn Databus, _operand: u16| {
     _pull_pc_from_stack(state, bus);
+    state.set_next_pc(state.get_next_pc() + 1);
 };
 
 const SBC_IMM: OperationFn = |state: &mut State, _bus: &mut dyn Databus, operand: u16| {
@@ -951,10 +956,10 @@ impl Instruction {
 
     pub fn execute(&self, state: &mut State, bus: &mut dyn Databus) {
         let evalued_operand = self.opcode.mode.eval(state, bus, self.operand);
-
-        // println!("{}", self.format());
+        //     println!("{}", self.format());
         self.opcode.operation.get_fn()(state, bus, evalued_operand);
     }
+
     pub fn calculate_cycle_cost(&self, state: &State, bus: &dyn Databus) -> u8 {
         let mut cost = self.opcode.cycles;
 
@@ -1064,7 +1069,7 @@ fn _adc(state: &mut State, operand: u8) {
 }
 
 fn _sbc(state: &mut State, operand: u8) {
-    _adc(state, !operand);
+    _adc(state, !operand)
 }
 
 fn _compare(state: &mut State, mem: u8, operand: u8) {
@@ -1075,7 +1080,7 @@ fn _compare(state: &mut State, mem: u8, operand: u8) {
 }
 
 fn _handle_interrupt(state: &mut State, bus: &mut dyn Databus, interrupt_vector: u16, break_flag: bool) {
-    _push_pc_to_stack(state, bus,state.get_next_pc() - 1);
+    _push_pc_to_stack(state, bus, state.get_next_pc());
 
     let mut status = *state.get_status_ref();
     status.set(state::SR_MASK_BREAK, break_flag);
@@ -1099,7 +1104,7 @@ fn _pull_pc_from_stack(state: &mut State, bus: &dyn Databus) {
     let pc_lo = _pull_stack(state, bus);
     let pc_hi = _pull_stack(state, bus);
 
-    let next_pc = ((pc_hi as u16) << 8) + pc_lo as u16 + 1;
+    let next_pc = ((pc_hi as u16) << 8) + pc_lo as u16;
     state.set_next_pc(next_pc);
 }
 
@@ -1108,7 +1113,7 @@ fn _push_stack(state: &mut State, bus: &mut dyn Databus, data: u8) {
     state.dec_sp();
 }
 
-fn _pull_status_from_stack(state :&mut State, bus: &dyn Databus) -> u8 {
+fn _pull_status_from_stack(state: &mut State, bus: &dyn Databus) -> u8 {
     _pull_stack(state, bus) & !(state::SR_MASK_B_FLAG | state::SR_MASK_BREAK)
 }
 
