@@ -4,7 +4,6 @@ use super::state;
 use super::addressing::AddressingMode;
 use super::cpu;
 use crate::cpu::state::{Status, SR_MASK_BREAK, SR_MASK_B_FLAG};
-use crate::cpu::addressing::AddressingMode::ZeropageIndexedX;
 
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, PartialEq)]

@@ -47,6 +47,9 @@ const FLAGS_7_OFFSET: usize = 7;
 // const FLAGS_8_OFFSET: usize = 8;
 // const FLAGS_9_OFFSET: usize = 9;
 
+const FLAGS_10_OFFSET: usize = 7;
+const FLAGS_10_TV_SYSTEM_MASK:u8 = 0x3;
+
 
 pub fn open_ines(path: &String) -> Result<(Cartridge), String> {
     let file_data = file::read_file(path);
@@ -65,6 +68,7 @@ pub fn open_ines(path: &String) -> Result<(Cartridge), String> {
     let trainer_present = (header[FLAGS_6_OFFSET] & FLAGS_6_TRAINER_MASK) > 0;
     let ignore_mirroring = header[FLAGS_6_OFFSET] & FLAGS_6_IGNORE_MIRRORING_MASK > 0;
     let mapper = (header[FLAGS_7_OFFSET] & 0xF0) + (header[FLAGS_6_OFFSET] >> 4);
+    let tv_system = header[FLAGS_10_OFFSET] & FLAGS_10_TV_SYSTEM_MASK;
 
     let mut offset = if trainer_present { TRAINER_SIZE + HEADER_SIZE } else { HEADER_SIZE };
 
@@ -92,6 +96,7 @@ pub fn open_ines(path: &String) -> Result<(Cartridge), String> {
         println!("Trainer present: {}", trainer_present);
         println!("Ignore mirroring: {}", ignore_mirroring);
         println!("Mapper: {}", mapper);
+        println!("TV-system: {}", tv_system);
         println!("===========================");
 
     }

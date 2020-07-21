@@ -15,7 +15,7 @@ pub struct NES {
     databus: NesDatabus,
     cartridge: Box<Cartridge>,
 
-    _actual_framerate: u32
+    _actual_framerate: u32,
 }
 
 impl NES {
@@ -31,7 +31,7 @@ impl NES {
             ppu,
             databus: NesDatabus::new(cartridge_ptr, ppu_ptr),
             cartridge,
-            _actual_framerate: 0
+            _actual_framerate: 0,
         }
     }
 
@@ -39,6 +39,7 @@ impl NES {
         self.cpu.tick(&mut self.databus);
 
         let mut frame_done = false;
+
         frame_done |= self.ppu.tick();
         frame_done |= self.ppu.tick();
         frame_done |= self.ppu.tick();
